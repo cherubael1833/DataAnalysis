@@ -1,0 +1,18 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+env/
+
+# Logs
+*.log
+*.jsonl
+*.xlsx
+*.csv
+*.out
+# OS
+.DS_Store
+*.out
+
+# Secrets
+.env
