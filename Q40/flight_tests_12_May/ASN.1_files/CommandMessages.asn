@@ -1,0 +1,1819 @@
+CommandMessages DEFINITIONS
+AUTOMATIC TAGS ::=
+
+BEGIN
+
+EXPORTS ALL ;
+
+IMPORTS
+    Pad1bits, Pad2bits, Pad3bits, Pad4bits, Pad5bits, Pad6bits, Pad7bits, Pad8bits,
+    Pad9bits, Pad10bits, Pad11bits, Pad12bits, Pad13bits, Pad14bits, Pad15bits,
+    Unsigned8, Unsigned16, Signed32, IEEE754Sp, IEEE754Dp
+    FROM FundamentalDataTypes
+
+    TimeReference, DatumID, SatID, SignalID, MessageOctet, HoldType, NavSolutionMode,
+    PositionFormatID, AJASMode, NVRAMSection, PortID, SerialPortConfiguration,
+    IODirection, TimeStamp, MultiSignalID, LeverArmXYZ, UploadActions, DynamicsMode,
+    CorrectionService, SensorsInUse, RAIMMode, WaypointID, WaypointIndex,
+    AltitudeRef, NorthRef, RAIMType, IonoCorrection, TropoCorrection, RouteID
+    FROM CommonFieldDefinitions
+;
+
+
+-- ****************************************************************************
+-- * Configure Serial Port                                                    *
+-- *                                                                          *
+-- * Message name:    CmndConfigSerialPort                                    *
+-- * Message ID:      6355                                                    *
+-- * Message status:  Core                                                    *
+-- * Frequency:       As required                                             *
+-- * Input/Output:    Input/Output                                            *
+-- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
+-- * Short Description:                                                       *
+-- *                                                                          *
+-- * This command enables the host to configure the receiver's serial ports.  *
+-- * PortID 0 refers to the current port.                                     *
+-- *                                                                          *
+-- * Notes:                                                                   *
+-- *                                                                          *
+-- * This command provides the ability to configure the receiver serial       *
+-- * ports (baud rate and parity). Normally the configuration would be        *
+-- * applied to communications in both directions. However, the message       *
+-- * supports the ability to request different configurations for             *
+-- * communications in each direction on a port. Note that not all receiver   *
+-- * implementations will support asymmetric configurations.                  *
+-- *                                                                          *
+-- * When the command to change serial port configuration is sent to a        *
+-- * receiver, the receiver will not change baud rate until having confirmed  *
+-- * acceptance of the command.                                               *
+-- *                                                                          *
+-- * This revision of the ICD supports only serial type devices. Future       *
+-- * revisions may support other interfaces such as Ethernet, USB, CANBus     *
+-- * etc. COM Port configuration includes the current (this) port. If a new   *
+-- * baud rate is selected for the current port the Host (user) shall be      *
+-- * required to re-connect using the new baud rate. The user should then     *
+-- * save the configuration using the 'Receiver Save Configuration' command.  *
+-- * The receiver shall use the baud rate setting in NVRAM at start-up if     *
+-- * there is a valid setting, otherwise the default setting shall be used.   *
+-- * If this command message is sent with no data the receiver will respond   *
+-- * with a list of the configured ports and their configuration.             *
+-- *                                                                          *
+-- ****************************************************************************
+--
+CmndConfigSerialPort ::= SEQUENCE {
+    wordPadding                     Pad8bits,
+    serialPortConfigs               SEQUENCE (SIZE(0..255)) OF SerialPortConfiguration
+}
+
+
+-- ****************************************************************************
+-- * Send Pre-Wrapped Message Via Logical Port                                *
+-- *                                                                          *
+-- * Message name:    CmndSendPreWrappedMessage                               *
+-- * Message ID:      6281                                                    *
+-- * Message status:  Core                                                    *
+-- * Frequency:       As required                                             *
+-- * Input/Output:    Input                                                   *
+-- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
+-- * Short Description:                                                       *
+-- *                                                                          *
+-- * This command enables the host to communicate with another receiver or    *
+-- * device that is connected to the receiver and is operating according to   *
+-- * this ICD (e.g. a smart antenna system).                                  *
+-- *                                                                          *
+-- * Notes:                                                                   *
+-- *                                                                          *
+-- * It conveys an embedded command message, which is to be forwarded. The    *
+-- * other 'device' may be remote such that the message exchange is           *
+-- * implemented over a radio communication link, however the physical        *
+-- * transfer mechanism should be transparent to the receiver.                *
+-- *                                                                          *
+-- ****************************************************************************
+--
+CmndSendPreWrappedMessage ::= SEQUENCE {
+    wordPadding                     Pad8bits,
+    portID                          PortID,
+-- preWrappedMessage: a transport-wrapped message to be forwarded (e.g. a GSSIP message)
+    preWrappedMessage               PreWrappedMessage
+}
+
+PreWrappedMessage ::= SEQUENCE {
+    wordPadding                     Pad6bits,
+    message                         SEQUENCE (SIZE(0..512)) OF MessageOctet
+}
+
+-- ****************************************************************************
+-- * Receiver Reset                                                           *
+-- *                                                                          *
+-- * Message name:    CmndRxReset                                             *
+-- * Message ID:      6250                                                    *
+-- * Message status:  Core                                                    *
+-- * Frequency:       As required                                             *
+-- * Input/Output:    Input                                                   *
+-- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
+-- * Short Description:                                                       *
+-- *                                                                          *
+-- * This command performs a reset depending on the parameter supplied.       *
+-- *                                                                          *
+-- * Notes:                                                                   *
+-- *                                                                          *
+-- * Following a receiver software reset request, the receiver will initiate  *
+-- * a soft reset and re-initialise processing. Following a receiver hardware *
+-- * reset request, the receiver will initiate a cold-start boot operation.   *
+-- * The receiver configuration will either revert to the default             *
+-- * configuration if there is no valid user configuration saved in NVRAM or  *
+-- * to the last successful 'Receiver Save Configuration' settings. Following *
+-- * a receiver Factory reset, all NVRAM will be cleared and then the         *
+-- * receiver will perform a cold-start boot operation.                       *
+-- *                                                                          *
+-- ****************************************************************************
+--
+CmndRxReset ::= SEQUENCE {
+    wordPadding                     Pad12bits,
+-- The type of reset maybe be a software, hardware, or factory reset.
+-- Padded to use 4 bits.
+    rxReset                         ENUMERATED {
+        rxResetSoftware,                -- receiver software reset
+        rxResetHardware,                -- receiver hardware reset
+        rxResetFactory,                 -- receiver factory reset
+        reserved3,
+        reserved4,
+        reserved5,
+        reserved6,
+        reserved7,
+        reserved8,
+        reserved9,
+        reserved10,
+        reserved11,
+        reserved12,
+        rxResetColdStart,               -- receiver cold start reset
+        rxResetWarmStart,               -- receiver warm start reset
+        rxResetHotStart                 -- receiver hot start reset
+    },
+-- Delay period for the receiver to wait before performing the reset (in seconds).
+    rxResetDelay                    INTEGER (0..65535)      -- seconds
+}
+
+
+-- ****************************************************************************
+-- * Universal Receiver Reset                                                 *
+-- *                                                                          *
+-- * Message name:    CmndUniversalReset                                      *
+-- * Message ID:      0                                                       *
+-- * Message status:  Core                                                    *
+-- * Frequency:       As required                                             *
+-- * Input/Output:    Input                                                   *
+-- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
+-- * Short Description:                                                       *
+-- *                                                                          *
+-- * This command performs a Universal reset.                                 *
+-- *                                                                          *
+-- * Notes:                                                                   *
+-- *                                                                          *
+-- * When sent to the receiver with the Disconnect Message Flag set, the      *
+-- * receiver will disconnect all messages for the identified port, reset     *
+-- * the port and the default messages are reconnected.                       *
+-- *                                                                          *
+-- * If the message is sent without the disconnect message flag set there     *
+-- * will be no action taken.                                                 *
+-- *                                                                          *
+-- ****************************************************************************
+--
+CmndUniversalReset  ::= NULL
+
+
+-- ****************************************************************************
+-- * Commanded BIT                                                            *
+-- *                                                                          *
+-- * Message name:    CmndRunBIT                                              *
+-- * Message ID:      6340                                                    *
+-- * Message status:  Optional(2)                                             *
+-- * Frequency:       As required                                             *
+-- * Input/Output:    Input                                                   *
+-- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
+-- * Short Description:                                                       *
+-- *                                                                          *
+-- * This command initiates a built in test (BIT).                            *
+-- *                                                                          *
+-- * Notes:                                                                   *
+-- *                                                                          *
+-- * This command initiates any built in tests.                               *
+-- *                                                                          *
+-- * The parameter allows selection of the test, or tests, to be performed.   *
+-- *                                                                          *
+-- * 0 shall initiate default tests. Other values are not standardised and    *
+-- * are vendor specific but allow specific test regimes to be requested.     *
+-- *                                                                          *
+-- ****************************************************************************
+--
+CmndRunBIT ::= Unsigned16
+
+
+-- ****************************************************************************
+-- * Save Configuration Data                                                  *
+-- *                                                                          *
+-- * Message name:    CmndSaveConfigData                                      *
+-- * Message ID:      6282                                                    *
+-- * Message status:  Core                                                    *
+-- * Frequency:       As required                                             *
+-- * Input/Output:    Input                                                   *
+-- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
+-- * Short Description:                                                       *
+-- *                                                                          *
+-- * This command saves all or part of the receiver configuration data into   *
+-- * NVRAM.                                                                   *
+-- *                                                                          *
+-- * Notes:                                                                   *
+-- *                                                                          *
+-- * See NVRAMSection for further details.                                    *
+-- *                                                                          *
+-- ****************************************************************************
+--
+CmndSaveConfigData ::= NVRAMSection
+
+
+-- ****************************************************************************
+-- * Reset Configuration Data                                                 *
+-- *                                                                          *
+-- * Message name:    CmndResetConfigData                                     *
+-- * Message ID:      6368                                                    *
+-- * Message status:  Core                                                    *
+-- * Frequency:       As required                                             *
+-- * Input/Output:    Input                                                   *
+-- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
+-- * Short Description:                                                       *
+-- *                                                                          *
+-- * This command resets all or part of the receiver configuration data       *
+-- * stored in NVRAM back to factory settings.                                *
+-- *                                                                          *
+-- * Notes:                                                                   *
+-- *                                                                          *
+-- * See NVRAMSection for further details.                                    *
+-- *                                                                          *
+-- ****************************************************************************
+--
+CmndResetConfigData ::= NVRAMSection
+
+
+-- ****************************************************************************
+-- * Connect to Message                                                       *
+-- *                                                                          *
+-- * Message name:    CmndConnectMessage                                      *
+-- * Message ID:      6342                                                    *
+-- * Message status:  Core                                                    *
+-- * Frequency:       As required                                             *
+-- * Input/Output:    Input                                                   *
+-- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
+-- * Short Description:                                                       *
+-- *                                                                          *
+-- * Augments the GSSIP CONNECT/DISCONNECT protocol to allow connection to,   *
+-- * and disconnection from, a message at a user specified repeat interval    *
+-- * and to a port other than the current communications port.                *
+-- * PortID 0 refers to the current port.                                     *
+-- *                                                                          *
+-- * Notes:                                                                   *
+-- *                                                                          *
+-- * The output interval for the message is defined in seconds. It is ignored *
+-- * if the GSSIP header DISCONNECT flag is set. If the GSSIP CONNECT flag is *
+-- * set then the message is set to send at the given interval.               *
+-- * If the interval is set to 0 the default rate for the message is used.    *
+-- * If the interval is set to -1, then the connection is 'on-change'.        *
+-- * If 'on-change' is requested then the message is scheduled for one        *
+-- * transmission, and then scheduled to resend whenever data has changed.    *
+-- * All other negative rates are reserved and will be rejected.              *
+-- *                                                                          *
+-- ****************************************************************************
+--
+CmndConnectMessage ::= SEQUENCE {
+    wordPadding                     Pad8bits,
+    portID                          PortID,
+    messageID                       INTEGER (0..65535),     -- Message ID to be connected to or disconnected from.
+    interval                        IEEE754Sp               -- Output interval in seconds - see Notes.
+}
+
+
+-- ****************************************************************************
+-- * Enable Event Input                                                       *
+-- *                                                                          *
+-- * Message name:    CmndEnableEventInput                                    *
+-- * Message ID:      6302                                                    *
+-- * Message status:  Optional(2)                                             *
+-- * Frequency:       As required                                             *
+-- * Input/Output:    Input/Output                                            *
+-- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
+-- * Short Description:                                                       *
+-- *                                                                          *
+-- * This command message enables control over the receiver's Event input     *
+-- * signal(s). Configuring an Event input will also cause the                *
+-- * DataEventDateTime message to be output to the selected port when the     *
+-- * event marker input is triggered.                                         *
+-- *                                                                          *
+-- * Notes:                                                                   *
+-- *                                                                          *
+-- ****************************************************************************
+--
+CmndEnableEventInput ::= SEQUENCE {
+    wordPadding                     Pad11bits,
+    portSettings                    SEQUENCE (SIZE(0..16)) OF SEQUENCE {
+        port                            INTEGER (0..255),       -- logical event port
+        portID                          PortID,                 -- logical communications port the DataEventDateTime message will be issued on (or 0 for current)
+        eventInputEnabled               BOOLEAN,
+        polarityPositive                BOOLEAN,                -- event input pulse polarity. TRUE = Rising edge event marker
+        wordPadding                     Pad14bits
+    }
+}
+
+
+-- ****************************************************************************
+-- * Enable Frequency Output                                                  *
+-- *                                                                          *
+-- * Message name:    CmndEnableFrequencyOutput                               *
+-- * Message ID:      6305                                                    *
+-- * Message status:  Optional(2)                                             *
+-- * Frequency:       As required                                             *
+-- * Input/Output:    Input/Output                                            *
+-- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
+-- * Short Description:                                                       *
+-- *                                                                          *
+-- * This command message allows the user to define the characteristics of    *
+-- * the receiver's output pulse train signal(s).                             *
+-- *                                                                          *
+-- * Notes:                                                                   *
+-- *                                                                          *
+-- * timeReference specifies what time reference the selected marker edge is  *
+-- * aligned to and will remain fixed independent of any change initiated     *
+-- * with CmndSetReportedTimeRef.                                             *
+-- * dutyRatio specifies the ratio of the mark duration to the pulse period,  *
+-- * e.g. 0.25 means the pulse is on for 25% of the pulse period. Support for *
+-- * different duty cycles is subject to vendor implementation. Setting the   *
+-- * dutyRatio to 0 will cause the receiver's default pulse width to be used. *
+-- * rate specifies the frequency of the pulse output in Hz, e.g. 10 is       *
+-- * 10 Hz.                                                                   *
+-- *                                                                          *
+-- ****************************************************************************
+--
+CmndEnableFrequencyOutput ::= SEQUENCE {
+    wordPadding                     Pad11bits,
+    portSettings                    SEQUENCE (SIZE(0..16)) OF SEQUENCE {
+        port                            INTEGER (0..255),       -- logical frequency output port the pulse train is output on
+        wordPadding                     Pad12bits,
+        timeReference                   TimeReference,          -- Selected time reference for frequency output.
+        freqOutputEnabled               BOOLEAN,
+        polarityPositive                BOOLEAN,                -- frequency output pulse polarity. TRUE = Rising edge time marker
+        wordPadding1                    Pad6bits,
+        rate                            IEEE754Sp,              -- Hz
+        dutyRatio                       IEEE754Sp               -- Mark to period ratio, e.g. 0.25 means pulse on (mark) time is 1/4 of the period. Use 0 for the receiver default.
+    }
+}
+
+
+-- ****************************************************************************
+-- * Enable nPPS Output                                                       *
+-- *                                                                          *
+-- * Message name:    CmndEnablePPSOutput                                     *
+-- * Message ID:      6293                                                    *
+-- * Message status:  Core                                                    *
+-- * Frequency:       As required                                             *
+-- * Input/Output:    Input/Output                                            *
+-- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
+-- * Short Description:                                                       *
+-- *                                                                          *
+-- * This command message enables control over the receiver's nPPS            *
+-- * pulses-per-second output signal(s). Configuring an nPPS output will      *
+-- * also cause the DataDateTime message to be output at the requested rate   *
+-- * to the selected port.                                                    *
+-- *                                                                          *
+-- * Notes:                                                                   *
+-- *                                                                          *
+-- * By default, nPPS output is enabled on power-up and configured to 1PPS    *
+-- * in the UTC time reference and with a positive (rising edge).             *
+-- * All receivers shall support 1PPS. Support for 10PPS is recommended.      *
+-- * Support for other rates is optional.                                     *
+-- * timeReference specifies what time reference the selected marker edge is  *
+-- * aligned to and will remain fixed independent of any change initiated     *
+-- * with CmndSetReportedTimeRef.                                             *
+-- * dutyRatio specifies the ratio of the mark duration to the pulse period,  *
+-- * e.g. 0.25 means the pulse is on for 25% of the pulse period. Support for *
+-- * configurable dutyRatio is also optional. Setting the dutyRatio to 0 will *
+-- * cause the receiver's default pulse width to be used.                     *
+-- *                                                                          *
+-- ****************************************************************************
+--
+CmndEnablePPSOutput ::= SEQUENCE {
+    wordPadding                     Pad11bits,
+    portSettings                    SEQUENCE (SIZE(0..16)) OF SEQUENCE {
+        port                            INTEGER (0..255),       -- logical PPS port
+        portID                          PortID,                 -- logical communications port the DataDateTime message will be issued on (or 0 for current)
+        wordPadding                     Pad4bits,
+        timeReference                   TimeReference,          -- Selected time reference for PPS output.
+        ppsOutputEnabled                BOOLEAN,
+        polarityPositive                BOOLEAN,                -- PPS output pulse polarity. TRUE = Rising edge time marker
+        wordPadding1                    Pad6bits,
+        rate                            IEEE754Sp,              -- Hz
+        dutyRatio                       IEEE754Sp               -- Mark to period ratio, e.g. 0.25 means pulse on (mark) time is 1/4 of the period. Use 0 for the receiver default.
+    }
+}
+
+
+-- ****************************************************************************
+-- * Set GNSS Solution Mode                                                   *
+-- *                                                                          *
+-- * Message name:    CmndSetGNSSSolutionMode                                 *
+-- * Message ID:      6381                                                    *
+-- * Message status:  Optional(2)                                             *
+-- * Frequency:       As required                                             *
+-- * Input/Output:    Input/Output                                            *
+-- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
+-- * Short Description:                                                       *
+-- *                                                                          *
+-- * This command message selects the method of GNSS solution computation.    *
+-- *                                                                          *
+-- * Notes:                                                                   *
+-- *                                                                          *
+-- * This command covers GNSS only methods (no integrated navigations         *
+-- * settings).                                                               *
+-- *                                                                          *
+-- ****************************************************************************
+--
+CmndSetGNSSSolutionMode ::= SEQUENCE {
+-- This type defines the navigation solution mode employed.
+-- Padded to use 4 bits.
+    gnssSolutionMode                ENUMERATED {
+        gnssSolModeAutoChoose,          -- receiver free to choose
+        gnssSolModeLeastSquares,        -- using least squares
+        gnssSolModeFiltered,            -- using filter
+        reserved3,
+        reserved4,
+        reserved5,
+        reserved6,
+        reserved7,
+        reserved8,
+        reserved9,
+        reserved10,
+        reserved11,
+        reserved12,
+        reserved13,
+        reserved14,
+        reserved15
+    },
+    ionoCorrectionToUse             IonoCorrection,
+    tropoCorrectionToUse            TropoCorrection,
+    correctionsToUse                CorrectionService
+}
+
+
+-- ****************************************************************************
+-- * Set Receiver Core Navigation Solution Datum                              *
+-- *                                                                          *
+-- * Message name:    CmndSetCoreNavDatum                                     *
+-- * Message ID:      6341                                                    *
+-- * Message status:  Core                                                    *
+-- * Frequency:       As required                                             *
+-- * Input/Output:    Input/Output                                            *
+-- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
+-- * Short Description:                                                       *
+-- *                                                                          *
+-- * This command message configures the receiver's navigation datum for      *
+-- * DataCoreNavSolution message.                                             *
+-- *                                                                          *
+-- * Notes:                                                                   *
+-- *                                                                          *
+-- * The receiver defaults to WGS-84 datum on power-up.                       *
+-- *                                                                          *
+-- ****************************************************************************
+--
+CmndSetCoreNavDatum ::= DatumID
+
+
+-- ****************************************************************************
+-- * Set Reported Position Format                                             *
+-- *                                                                          *
+-- * Message name:    CmndSetPositionFormat                                   *
+-- * Message ID:      6403                                                    *
+-- * Message status:  Core                                                    *
+-- * Frequency:       As required                                             *
+-- * Input/Output:    Input/Output                                            *
+-- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
+-- * Short Description:                                                       *
+-- *                                                                          *
+-- * This command message sets the format, including Grid, that position is   *
+-- * reported in, and the bearing reference for both heading and track        *
+-- * reporting.                                                               *
+-- *                                                                          *
+-- * Notes:                                                                   *
+-- *                                                                          *
+-- * On power-up the receiver defaults to reporting position in Lat/Lon in    *
+-- * WGS-84 datum, the altitude reference is height above ellipsoid and the   *
+-- * bearing references are True North.                                       *
+-- * When selecting a new grid the default datum for the grid is used unless  *
+-- * it is explicitly overridden by specifying a non-zero datumID here.       *
+-- * The datum specified here, either explicitly or implicitly, does not      *
+-- * affect the datum used by the DataCoreNavSolution message.                *
+-- *                                                                          *
+-- ****************************************************************************
+--
+CmndSetPositionFormat ::= SEQUENCE {
+    positionFormat                  PositionFormatID,
+    datumID                         DatumID,
+    wordPadding                     Pad14bits,
+    altitudeRef                     AltitudeRef,
+    wordPadding1                    Pad14bits,
+    headingRef                      NorthRef,
+    wordPadding2                    Pad14bits,
+    trackRef                        NorthRef
+}
+
+
+-- ****************************************************************************
+-- * Set Navigation Solution Holds                                            *
+-- *                                                                          *
+-- * Message name:    CmndSetHolds                                            *
+-- * Message ID:      6316                                                    *
+-- * Message status:  Optional(2)                                             *
+-- * Frequency:       As required                                             *
+-- * Input/Output:    Input/Output                                            *
+-- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
+-- * Short Description:                                                       *
+-- *                                                                          *
+-- * This command message sets the navigation solution hold approach.         *
+-- *                                                                          *
+-- * Notes:                                                                   *
+-- *                                                                          *
+-- * SatelliteHold is TRUE to hold the current satellite used in the          *
+-- * solution, or FALSE to release.                                           *
+-- *                                                                          *
+-- * Altitude and clock values passed to the routine are only used if hold    *
+-- * type is holdTypeProvidedValue. Otherwise the values passed are ignored.  *
+-- *                                                                          *
+-- ****************************************************************************
+--
+CmndSetHolds ::= SEQUENCE {
+    satelliteHold                   BOOLEAN,                -- TRUE to hold current satellites, FALSE to release
+    wordPadding                     Pad11bits,
+    altitudeHold                    HoldType,               -- Apply altitude hold using value provided, or current value
+    clockHold                       HoldType,               -- Apply clock hold using value provided, or current value
+    altitudeHoldValue               IEEE754Dp,              -- metres (with reference to the selected geoid)
+    clockHoldValue                  IEEE754Sp               -- seconds/second
+}
+
+
+-- ****************************************************************************
+-- * Set RAIM Mode                                                            *
+-- *                                                                          *
+-- * Message name:    CmndSetRAIMMode                                         *
+-- * Message ID:      6435                                                    *
+-- * Message status:  Optional(2)                                             *
+-- * Frequency:       As required                                             *
+-- * Input/Output:    Input/Output                                            *
+-- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
+-- * Short Description:                                                       *
+-- *                                                                          *
+-- * This command message controls the receiver's RAIM mode.                  *
+-- *                                                                          *
+-- * Notes:                                                                   *
+-- *                                                                          *
+-- ****************************************************************************
+--
+CmndSetRAIMMode ::= SEQUENCE {
+    wordPadding                     Pad4bits,
+    raimMode                        RAIMMode,
+    wordPadding1                    Pad4bits,
+    raimType                        RAIMType
+}
+
+
+-- ****************************************************************************
+-- * Set Constellations/Signals                                               *
+-- *                                                                          *
+-- * Message name:    CmndSetSignals                                          *
+-- * Message ID:      6304                                                    *
+-- * Message status:  Core                                                    *
+-- * Frequency:       As required                                             *
+-- * Input/Output:    Input/Output                                            *
+-- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
+-- * Short Description:                                                       *
+-- *                                                                          *
+-- * This command message allows the user to specify GNSS Constellations and  *
+-- * services to use.                                                         *
+-- *                                                                          *
+-- * Notes:                                                                   *
+-- *                                                                          *
+-- ****************************************************************************
+--
+CmndSetSignals ::= MultiSignalID
+
+
+-- ****************************************************************************
+-- * Set Reported Time Reference                                              *
+-- *                                                                          *
+-- * Message name:    CmndSetReportedTimeRef                                  *
+-- * Message ID:      6313                                                    *
+-- * Message status:  Core                                                    *
+-- * Frequency:       As required                                             *
+-- * Input/Output:    Input/Output                                            *
+-- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
+-- * Short Description:                                                       *
+-- *                                                                          *
+-- * This command sets the time reference used for time reporting.            *
+-- *                                                                          *
+-- * Notes:                                                                   *
+-- *                                                                          *
+-- ****************************************************************************
+--
+CmndSetReportedTimeRef ::= SEQUENCE {
+    wordPadding                     Pad4bits,
+    timeReference                   TimeReference,
+    wordPadding1                    Pad6bits,
+-- This type specifies the type of time Startup behaviour
+    timeStartUpBehaviour            ENUMERATED {
+        tsuBehaviourInhibitOutputsUntilTimeRefAvailable,
+        tsuBehaviourReportElapsedTime,
+        tsuBehaviourReportAvailableGNSSTimeRef
+    }
+}
+
+
+-- ****************************************************************************
+-- * Satellite Selection Control Message                                      *
+-- *                                                                          *
+-- * Message name:    CmndSatSelection                                        *
+-- * Message ID:      6314                                                    *
+-- * Message status:  Core                                                    *
+-- * Frequency:       As required                                             *
+-- * Input/Output:    Input/Output                                            *
+-- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
+-- * Short Description:                                                       *
+-- *                                                                          *
+-- * This command is used to set the behaviour of the satellites for a        *
+-- * specific constellation/signal type.                                      *
+-- *                                                                          *
+-- * Notes:                                                                   *
+-- *                                                                          *
+-- * It allows either the removal of specific satellites from use or the use  *
+-- * of only specified satellites.                                            *
+-- *                                                                          *
+-- ****************************************************************************
+--
+CmndSatSelection ::= SEQUENCE {
+    wordPadding                     Pad12bits,
+    satSelections                   SEQUENCE (SIZE(0..15)) OF SEQUENCE {
+        signals                         SignalID,
+        wordPadding                     Pad14bits,
+-- This type determines what satellites are included in the solution
+        satsToUse                       ENUMERATED {
+            satsAutoSelect,
+            satsUseAllExceptSpecified,
+            satsUseNoneExceptSpecified
+        },
+        sats                            SatSelection
+    }
+}
+
+SatSelection ::= SEQUENCE {
+    wordPadding                     Pad10bits,
+    satSelection                    SEQUENCE (SIZE(0..63)) OF SatID
+}
+
+
+-- ****************************************************************************
+-- * Set Receiver Dynamics                                                    *
+-- *                                                                          *
+-- * Message name:    CmndSetDynamics                                         *
+-- * Message ID:      6456                                                    *
+-- * Message status:  Core                                                    *
+-- * Frequency:       As required                                             *
+-- * Input/Output:    Input/Output                                            *
+-- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
+-- * Short Description:                                                       *
+-- *                                                                          *
+-- * This command adjusts the receiver dynamics to that of the host platform. *
+-- *                                                                          *
+-- * Notes:                                                                   *
+-- *                                                                          *
+-- * This type enables the anticipated dynamics of the receiver to be         *
+-- * configured or quantified.                                                *
+-- *                                                                          *
+-- ****************************************************************************
+--
+CmndSetDynamics ::= SEQUENCE {
+    wordPadding                     Pad12bits,
+    dynamics                        DynamicsMode
+}
+
+
+-- ****************************************************************************
+-- * Set Receiver AJ/AS Posture                                               *
+-- *                                                                          *
+-- * Message name:    CmndSetAJASPosture                                      *
+-- * Message ID:      6330                                                    *
+-- * Message status:  Core                                                    *
+-- * Frequency:       As required                                             *
+-- * Input/Output:    Input/Output                                            *
+-- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
+-- * Short Description:                                                       *
+-- *                                                                          *
+-- * This command sets the receiver Anti-Jam and Anti-Spoofing Posture.       *
+-- *                                                                          *
+-- * Notes:                                                                   *
+-- *                                                                          *
+-- ****************************************************************************
+--
+CmndSetAJASPosture ::= SEQUENCE {
+    wordPadding                     Pad6bits,
+    aJMode                          AJASMode,
+    wordPadding1                    Pad6bits,
+    aSMode                          AJASMode
+}
+
+
+-- ****************************************************************************
+-- * Set GNSS Signal Trust                                                    *
+-- *                                                                          *
+-- * Message name:    CmndSetSignalTrust                                      *
+-- * Message ID:      6253                                                    *
+-- * Message status:  Core                                                    *
+-- * Frequency:       As required                                             *
+-- * Input/Output:    Input/Output                                            *
+-- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
+-- * Short Description:                                                       *
+-- *                                                                          *
+-- * This control message allows the 'security trust' in an individual GNSS   *
+-- * service to be configured.                                                *
+-- *                                                                          *
+-- * Notes:                                                                   *
+-- *                                                                          *
+-- * This may be used by the receiver to prioritise signals in the PVT        *
+-- * solution. This command overwrites the default trust levels held within   *
+-- * the receiver.                                                            *
+-- *                                                                          *
+-- ****************************************************************************
+--
+CmndSetSignalTrust ::= SEQUENCE {
+    wordPadding                     Pad12bits,
+    setSignalTrust                  SEQUENCE (SIZE(0..15)) OF SEQUENCE {
+        signal                          MultiSignalID,
+        wordPadding                     Pad12bits,
+-- This type defines a level of trust for a service/signal
+-- Remaining values are interpreted as an interpolation from lowest trust level
+-- to highest
+        trustLevel                      ENUMERATED {
+            signalTrustLevel0,              -- Least trusted
+            signalTrustLevel1,
+            signalTrustLevel2,
+            signalTrustLevel3,
+            signalTrustLevel4,
+            signalTrustLevel5,
+            signalTrustLevel6,
+            signalTrustLevel7,
+            signalTrustLevel8,
+            signalTrustLevel9,
+            signalTrustLevel10,
+            signalTrustLevel11,
+            signalTrustLevel12,
+            signalTrustLevel13,
+            signalTrustLevel14,
+            signalTrustLevel15              -- Most trusted
+        }
+    }
+}
+
+
+-- ****************************************************************************
+-- * Set Elevation Mask Angle                                                 *
+-- *                                                                          *
+-- * Message name:    CmndSetElevationMaskAngle                               *
+-- * Message ID:      6453                                                    *
+-- * Message status:  Core                                                    *
+-- * Frequency:       As required                                             *
+-- * Input/Output:    Input/Output                                            *
+-- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
+-- * Short Description:                                                       *
+-- *                                                                          *
+-- * This command sets the mask angle, from the local tangent plane, below    *
+-- * which satellites will not be included in the solution computation.       *
+-- *                                                                          *
+-- * Notes:                                                                   *
+-- *                                                                          *
+-- * This is achieved by de-weighting/removing its range in the solution      *
+-- * computation. Note the command does not prevent the receiver from         *
+-- * tracking the specified satellite(s) below the specified elevation angle. *
+-- * This command supplements specification of a mask angle in the receiver   *
+-- * initialisation command.                                                  *
+-- *                                                                          *
+-- * Valid range for elevation angle is 0 to 90 degrees above the local       *
+-- * tangent plane. A value of 0 will remove masking in all cases. A value    *
+-- * of 90 will prevent any antenna being used in positioning calculations.   *
+-- *                                                                          *
+-- ****************************************************************************
+--
+CmndSetElevationMaskAngle ::= Unsigned16       -- degrees (0 <= value <= 90)
+
+
+-- ****************************************************************************
+-- * Set Antenna Group Delay                                                  *
+-- *                                                                          *
+-- * Message name:    CmndSetAntennaGroupDelay                                *
+-- * Message ID:      6285                                                    *
+-- * Message status:  Core                                                    *
+-- * Frequency:       As required                                             *
+-- * Input/Output:    Input/Output                                            *
+-- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
+-- * Short Description:                                                       *
+-- *                                                                          *
+-- * This command sets the delay through the antenna and cabling to the       *
+-- * receiver input.                                                          *
+-- *                                                                          *
+-- * Notes:                                                                   *
+-- *                                                                          *
+-- * The delay is set in seconds but is typically of the order of nanoseconds.*
+-- *                                                                          *
+-- * This command can be used to address delay on the PPS output.             *
+-- *                                                                          *
+-- ****************************************************************************
+--
+CmndSetAntennaGroupDelay ::= SEQUENCE {
+    wordPadding                     Pad13bits,
+    setAntennaGroupDelay            SEQUENCE (SIZE(0..7)) OF SEQUENCE {
+        wordPadding                     Pad13bits,
+        antennaID                       INTEGER (0..7),
+        antGroupDelay                   IEEE754Sp       -- seconds
+    }
+}
+
+
+-- ****************************************************************************
+-- * Set Antenna Offset                                                       *
+-- *                                                                          *
+-- * Message name:    CmndSetAntennaOffset                                    *
+-- * Message ID:      6344                                                    *
+-- * Message status:  Optional(2)                                             *
+-- * Frequency:       As required                                             *
+-- * Input/Output:    Input/Output                                            *
+-- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
+-- * Short Description:                                                       *
+-- *                                                                          *
+-- * This command message defines the offset of any antennas relative to the  *
+-- * chosen platform datum.                                                   *
+-- *                                                                          *
+-- * Notes:                                                                   *
+-- *                                                                          *
+-- * Up to 8 antennas can be setup, with IDs 0 to 7.                          *
+-- *                                                                          *
+-- * X = AFT, Y = PORT, Z = UP relative to the platform datum, see Figure 2-1 *
+-- * in [AD-1]. The default antenna offset is (0,0,0).                        *
+-- *                                                                          *
+-- ****************************************************************************
+--
+CmndSetAntennaOffset ::= SEQUENCE {
+    wordPadding                     Pad13bits,
+    setAntennaOffsets               SEQUENCE (SIZE(0..7)) OF SEQUENCE {
+        wordPadding                     Pad13bits,
+        antennaID                       INTEGER (0..7),
+        antennaOffset                   LeverArmXYZ             -- in metres (aft, port and up)
+    }
+}
+
+
+-- ****************************************************************************
+-- * Set Antenna Gain and Noise Figures and Type (Active/Passive)             *
+-- *                                                                          *
+-- * Message name:    CmndSetAntennaAttributes                                *
+-- * Message ID:      6448                                                    *
+-- * Message status:  Optional(2)                                             *
+-- * Frequency:       As required                                             *
+-- * Input/Output:    Input/Output                                            *
+-- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
+-- * Short Description:                                                       *
+-- *                                                                          *
+-- * This command sets the antenna gain and noise figures (in dB) and type -  *
+-- * whether it is active or passive.                                         *
+-- *                                                                          *
+-- * Notes:                                                                   *
+-- *                                                                          *
+-- * Once set, this will be stored when receiver configuration is saved.      *
+-- *                                                                          *
+-- ****************************************************************************
+--
+CmndSetAntennaAttributes ::= SEQUENCE {
+    wordPadding                     Pad13bits,
+    setAntennaAttributes            SEQUENCE (SIZE(0..7)) OF SEQUENCE {
+        wordPadding                     Pad13bits,
+        antennaID                       INTEGER (0..7),
+        antGain                         IEEE754Sp,              -- Antenna system gain in dBs
+        antNoiseFigure                  IEEE754Sp,              -- Antenna noise figure in dBs
+        antActive                       BOOLEAN,                -- True for Active, False for passive antenna
+        wordPadding1                    Pad15bits
+    }
+}
+
+
+-- ****************************************************************************
+-- * Set Lever Arm                                                            *
+-- *                                                                          *
+-- * Message name:    CmndSetLeverArm                                         *
+-- * Message ID:      6356                                                    *
+-- * Message status:  Optional(2)                                             *
+-- * Frequency:       As required                                             *
+-- * Input/Output:    Input/Output                                            *
+-- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
+-- * Short Description:                                                       *
+-- *                                                                          *
+-- * This command message defines the translational and orientational offset  *
+-- * of any lever arm platform. This is primarily to inform the receiver of   *
+-- * the position of an inertial sensor / IMU. A separate command             *
+-- * (CmndSetAntennaOffset) sets the GNSS antenna position relative to the    *
+-- * platform datum. This allows position and attitude reporting at a host-   *
+-- * selected datum position.                                                 *
+-- *                                                                          *
+-- * Notes:                                                                   *
+-- *                                                                          *
+-- * X = AFT, Y = PORT, Z = UP relative to the platform datum, see Figure 2-1 *
+-- * in [AD-1]. The default lever arm setting is (0,0,0), 0, 0, 0.            *
+-- *                                                                          *
+-- ****************************************************************************
+--
+CmndSetLeverArm ::= SEQUENCE {
+    leverArm                        LeverArmXYZ,            -- in metres (aft, port and up)
+    yawOffset                       IEEE754Sp,              -- degrees clockwise wrt platform
+    rollOffset                      IEEE754Sp,              -- degrees starboard down wrt platform
+    pitchOffset                     IEEE754Sp               -- degrees nose up wrt platform
+}
+
+
+-- ****************************************************************************
+-- * Set Integrated Navigation/Sensors                                        *
+-- *                                                                          *
+-- * Message name:    CmndSetNavAndSensors                                    *
+-- * Message ID:      6251                                                    *
+-- * Message status:  Optional(2)                                             *
+-- * Frequency:       As required                                             *
+-- * Input/Output:    Input/Output                                            *
+-- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
+-- * Short Description:                                                       *
+-- *                                                                          *
+-- * This command sets the integrated navigation sensor approach used.        *
+-- *                                                                          *
+-- * Notes:                                                                   *
+-- *                                                                          *
+-- * Integration of inertial and other sensors can be a complex task and      *
+-- * although this ICD provides for information transfer in a standardised    *
+-- * format it does not obviate the need for careful integration of GNSS      *
+-- * receiver and sensors. A particular example is in understanding the       *
+-- * performance of different sensors and the impact on position, velocity    *
+-- * and timing errors, error growth and how these might contribute to        *
+-- * overall accuracy reporting.                                              *
+-- *                                                                          *
+-- ****************************************************************************
+--
+CmndSetNavAndSensors ::= SEQUENCE {
+    wordPadding                     Pad4bits,
+    integratedNavigationMode        NavSolutionMode,        -- Selects the integrated navigation mode to use (or indicates that the receiver should do so automatically).
+    autoSelectSensors               BOOLEAN,                -- if TRUE receiver selects sensors to be used, otherwise sensors explicitly defined in sensorsToUse
+    wordPadding1                    Pad7bits,
+    sensorsToUse                    SensorsInUse
+}
+
+
+-- ****************************************************************************
+-- * Set IMU Sensor Latency                                                   *
+-- *                                                                          *
+-- * Message name:    CmndSetIMULatency                                       *
+-- * Message ID:      6268                                                    *
+-- * Message status:  Optional(2)                                             *
+-- * Frequency:       As required                                             *
+-- * Input/Output:    Input/Output                                            *
+-- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
+-- * Short Description:                                                       *
+-- *                                                                          *
+-- * This command tells the receiver how latent the IMU data is. For latency  *
+-- * between the IMU measurement and the start of frame for which the data is *
+-- * transferred (SDLC/STANAG 4572).                                          *
+-- *                                                                          *
+-- * Notes:                                                                   *
+-- *                                                                          *
+-- ****************************************************************************
+--
+CmndSetIMULatency ::= IEEE754Sp      -- seconds
+
+
+-- ****************************************************************************
+-- * Request Datum Information                                                *
+-- *                                                                          *
+-- * Message name:    CmndReqDatumInfo                                        *
+-- * Message ID:      6345                                                    *
+-- * Message status:  Core                                                    *
+-- * Frequency:       As required                                             *
+-- * Input/Output:    Input/Output                                            *
+-- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
+-- * Short Description:                                                       *
+-- *                                                                          *
+-- * This command requests the parameters to transform between alternative    *
+-- * datums and WGS-84.                                                       *
+-- *                                                                          *
+-- * Notes:                                                                   *
+-- *                                                                          *
+-- ****************************************************************************
+--
+CmndReqDatumInfo ::= SEQUENCE {
+    wordPadding                     Pad8bits,
+    reqDatumInfo                    SEQUENCE (SIZE(0..255)) OF DatumID
+}
+
+
+-- ****************************************************************************
+-- * Report Receiver Configuration                                            *
+-- *                                                                          *
+-- * Message name:    CmndReportRxConfig                                      *
+-- * Message ID:      6307                                                    *
+-- * Message status:  Optional(2)                                             *
+-- * Frequency:       As required                                             *
+-- * Input/Output:    Input                                                   *
+-- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
+-- * Short Description:                                                       *
+-- *                                                                          *
+-- * This command instructs the receiver to report its configuration. It does *
+-- * this by outputting messages applicable to the receiver's configuration   *
+-- * allowing configurations to be easily saved and reapplied.                *
+-- *                                                                          *
+-- * Notes:                                                                   *
+-- *                                                                          *
+-- * Messages returned are as follows:                                        *
+-- *    - CmndConfigSerialPort                                                *
+-- *    - CmndEnablePPSOutput                                                 *
+-- *    - CmndSetGNSSSolutionMode                                             *
+-- *    - CmndSetCoreNavDatum                                                 *
+-- *    - CmndSetPositionFormat                                               *
+-- *    - CmndSetHolds                                                        *
+-- *    - CmndSetRAIMMode                                                     *
+-- *    - CmndSatSelection                                                    *
+-- *    - CmndSetSignals                                                      *
+-- *    - CmndSetReportedTimeRef                                              *
+-- *    - CmndSetDynamics                                                     *
+-- *    - CmndSetAJASPosture                                                  *
+-- *    - CmndSetSignalTrust                                                  *
+-- *    - CmndSetElevationMaskAngle                                           *
+-- *    - CmndSetNavAndSensors                                                *
+-- *    - CmndSetRxMode                                                       *
+-- *    - CmndReqNMEA                                                         *
+-- *    - CmndReqRTCM104                                                      *
+-- *    - DataDatumInfo (reports only the user defined datums)                *
+-- *                                                                          *
+-- * Optional messages (reported subject to receiver support):                *
+-- *    - CmndSetRxPowerManagement                                            *
+-- *    - CmndSetAntennaGroupDelay                                            *
+-- *    - CmndSetAntennaOffset                                                *
+-- *    - CmndSetAntennaAttributes                                            *
+-- *    - CmndSetLeverArm                                                     *
+-- *    - CmndSetIMULatency                                                   *
+-- *    - CmndEnableIRIGPorts                                                 *
+-- *    - CmndEnablePTTIPorts                                                 *
+-- *    - CmndEnableFrequencyOutput                                           *
+-- *    - CmndEnableEventInput                                                *
+-- *                                                                          *
+-- ****************************************************************************
+--
+CmndReportRxConfig ::= NULL
+
+
+-- ****************************************************************************
+-- * Set Receiver Power Management Posture                                    *
+-- *                                                                          *
+-- * Message name:    CmndSetRxPowerManagement                                *
+-- * Message ID:      6417                                                    *
+-- * Message status:  Optional(2)                                             *
+-- * Frequency:       As required                                             *
+-- * Input/Output:    Input/Output                                            *
+-- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
+-- * Short Description:                                                       *
+-- *                                                                          *
+-- * This command allows the host to select the receiver's power management   *
+-- * posture (whether it's operating in a low power optimised or high         *
+-- * performance optimised configuration).                                    *
+-- *                                                                          *
+-- * Notes:                                                                   *
+-- *                                                                          *
+-- * This is a hint to the receiver.                                          *
+-- *                                                                          *
+-- ****************************************************************************
+--
+CmndSetRxPowerManagement ::= SEQUENCE {
+    wordPadding                     Pad14bits,
+-- This type determines the power management policy
+    powerManagementOptions          ENUMERATED {
+        powerManAutoSelect,
+        powerManOptimised,
+        powerManPerformanceOptimised
+    }
+}
+
+
+-- ****************************************************************************
+-- * Set Receiver Mode                                                        *
+-- *                                                                          *
+-- * Message name:    CmndSetRxMode                                           *
+-- * Message ID:      6459                                                    *
+-- * Message status:  Optional(2)                                             *
+-- * Frequency:       As required                                             *
+-- * Input/Output:    Input/Output                                            *
+-- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
+-- * Short Description:                                                       *
+-- *                                                                          *
+-- * This command allows the host to select the receiver mode.                *
+-- *                                                                          *
+-- * Notes:                                                                   *
+-- *                                                                          *
+-- * This is a command to the receiver.                                       *
+-- *                                                                          *
+-- * Transition from Standby to one of the other modes is not standardised    *
+-- * and may involve a vendor specified external signal stimulus. Support     *
+-- * for this mode is subject to vendor discretion.                           *
+-- *                                                                          *
+-- ****************************************************************************
+--
+CmndSetRxMode ::= SEQUENCE {
+    wordPadding                     Pad14bits,
+-- This type determines the receiver mode
+    rxMode                          ENUMERATED {
+        rxModeOff,                      -- request the receiver to power off
+        rxModeSleep,                    -- request the receiver to go off-line but remain powered and awaiting command inputs, minimising power consumption and awaiting a stimulus to return to online operation.
+        rxModeOnline,                   -- request the receiver to go on-line and operational
+        rxModeStandby                   -- request the receiver to go off-line and enter a low-power standby mode where the receiver is off-line
+    }
+}
+
+
+-- ****************************************************************************
+-- * Clear Receiver Data                                                      *
+-- *                                                                          *
+-- * Message name:    CmndClear                                               *
+-- * Message ID:      6375                                                    *
+-- * Message status:  Optional(2)                                             *
+-- * Frequency:       As required                                             *
+-- * Input/Output:    Input                                                   *
+-- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
+-- * Short Description:                                                       *
+-- *                                                                          *
+-- * This command instructs the receiver to erase specified data from         *
+-- * information in the receiver's working memory and any NVRAM.              *
+-- *                                                                          *
+-- * Notes:                                                                   *
+-- *                                                                          *
+-- ****************************************************************************
+--
+CmndClear ::= SEQUENCE {
+    clearWaypointsAndRoutes         BOOLEAN,
+    clearPositionData               BOOLEAN,
+    clearSatData                    BOOLEAN,
+    wordPadding                     Pad13bits
+}
+
+
+-- ****************************************************************************
+-- * Request Waypoint Information                                             *
+-- *                                                                          *
+-- * Message name:    CmndReqWaypointInfo                                     *
+-- * Message ID:      6424                                                    *
+-- * Message status:  Optional(2)                                             *
+-- * Frequency:       Once (per request)                                      *
+-- * Input/Output:    Input                                                   *
+-- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
+-- * Short Description:                                                       *
+-- *                                                                          *
+-- * This command requests the waypoint information.                          *
+-- *                                                                          *
+-- * Notes:                                                                   *
+-- *                                                                          *
+-- * Use WaypointID 0 to mean all waypoints.                                  *
+-- *                                                                          *
+-- * The requested waypoint data is returned using the DataWaypointInfo       *
+-- * message.                                                                 *
+-- *                                                                          *
+-- ****************************************************************************
+--
+CmndReqWaypointInfo ::= SEQUENCE {
+    wordPadding                     Pad6bits,
+    reqWaypointInfo                 SEQUENCE (SIZE(0..1023)) OF WaypointID
+}
+
+
+-- ****************************************************************************
+-- * Request Route Information                                                *
+-- *                                                                          *
+-- * Message name:    CmndReqRouteInfo                                        *
+-- * Message ID:      6393                                                    *
+-- * Message status:  Optional(2)                                             *
+-- * Frequency:       Once (per request)                                      *
+-- * Input/Output:    Input                                                   *
+-- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
+-- * Short Description:                                                       *
+-- *                                                                          *
+-- * This command requests the route information.                             *
+-- *                                                                          *
+-- * Notes:                                                                   *
+-- *                                                                          *
+-- * Use RouteID 0 to mean all routes.                                        *
+-- *                                                                          *
+-- * The requested route information is returned using the DataRouteInfo      *
+-- * message.                                                                 *
+-- *                                                                          *
+-- ****************************************************************************
+--
+CmndReqRouteInfo ::= RouteID
+
+
+-- ****************************************************************************
+-- * Save Route and Waypoint Information                                      *
+-- *                                                                          *
+-- * Message name:    CmndSaveRouteAndWaypointInfo                            *
+-- * Message ID:      6279                                                    *
+-- * Message status:  Optional(2)                                             *
+-- * Frequency:       As required                                             *
+-- * Input/Output:    Input                                                   *
+-- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
+-- * Short Description:                                                       *
+-- *                                                                          *
+-- * This command causes the route and waypoint information to be saved to    *
+-- * NVRAM.                                                                   *
+-- *                                                                          *
+-- * Notes:                                                                   *
+-- *                                                                          *
+-- ****************************************************************************
+--
+CmndSaveRouteAndWaypointInfo ::= NULL
+
+
+-- ****************************************************************************
+-- * Clear Waypoints                                                          *
+-- *                                                                          *
+-- * Message name:    CmndClearWaypoints                                      *
+-- * Message ID:      6428                                                    *
+-- * Message status:  Optional(2)                                             *
+-- * Frequency:       As required                                             *
+-- * Input/Output:    Input                                                   *
+-- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
+-- * Short Description:                                                       *
+-- *                                                                          *
+-- * This command clears the specified waypoints saved in the receiver's      *
+-- * working memory and any NVRAM.                                            *
+-- *                                                                          *
+-- * Notes:                                                                   *
+-- *                                                                          *
+-- * Use WaypointID 0 to mean clear all waypoints.                            *
+-- *                                                                          *
+-- ****************************************************************************
+--
+CmndClearWaypoints ::= SEQUENCE {
+    wordPadding                     Pad6bits,
+    waypointsToClear                SEQUENCE (SIZE(0..1023)) OF WaypointID
+}
+
+
+-- ****************************************************************************
+-- * Clear Routes                                                             *
+-- *                                                                          *
+-- * Message name:    CmndClearRoutes                                         *
+-- * Message ID:      6395                                                    *
+-- * Message status:  Optional(2)                                             *
+-- * Frequency:       As required                                             *
+-- * Input/Output:    Input                                                   *
+-- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
+-- * Short Description:                                                       *
+-- *                                                                          *
+-- * This command clears the specified routes saved in the receiver's         *
+-- * working memory and any NVRAM.                                            *
+-- *                                                                          *
+-- * Notes:                                                                   *
+-- *                                                                          *
+-- * Use RouteID 0 to mean clear all routes.                                  *
+-- *                                                                          *
+-- ****************************************************************************
+--
+CmndClearRoutes ::= SEQUENCE {
+    wordPadding                     Pad8bits,
+    routesToClear                   SEQUENCE (SIZE(0..255)) OF RouteID
+}
+
+
+-- ****************************************************************************
+-- * Start Route Navigation                                                   *
+-- *                                                                          *
+-- * Message name:    CmndStartRouteNav                                       *
+-- * Message ID:      6415                                                    *
+-- * Message status:  Optional(2)                                             *
+-- * Frequency:       As required                                             *
+-- * Input/Output:    Input                                                   *
+-- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
+-- * Short Description:                                                       *
+-- *                                                                          *
+-- * This command starts navigation based on the route.                       *
+-- *                                                                          *
+-- * Notes:                                                                   *
+-- *                                                                          *
+-- * The first Waypoint in the route has index 1.                             *
+-- *                                                                          *
+-- ****************************************************************************
+--
+CmndStartRouteNav ::= SEQUENCE {
+    routeToNavigate                 RouteID,
+    firstRouteWaypointIndex         WaypointIndex,
+    finalRouteWaypointIndex         WaypointIndex,
+    useVerticalGuidance             BOOLEAN,
+    wordPadding                     Pad15bits,
+    alertRadiusHorizontal           IEEE754Sp,              -- metres
+    alertHeightVertical             IEEE754Sp               -- metres
+}
+
+
+-- ****************************************************************************
+-- * Start Waypoint Navigation                                                *
+-- *                                                                          *
+-- * Message name:    CmndStartWaypointNav                                    *
+-- * Message ID:      6333                                                    *
+-- * Message status:  Optional(2)                                             *
+-- * Frequency:       As required                                             *
+-- * Input/Output:    Input                                                   *
+-- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
+-- * Short Description:                                                       *
+-- *                                                                          *
+-- * This command starts navigation to a stored waypoint.                     *
+-- *                                                                          *
+-- * Notes:                                                                   *
+-- *                                                                          *
+-- ****************************************************************************
+--
+CmndStartWaypointNav ::= SEQUENCE {
+    waypointToNavigateTo            WaypointID,
+    useVerticalGuidance             BOOLEAN,
+    wordPadding                     Pad15bits,
+    alertRadiusHorizontal           IEEE754Sp,              -- metres
+    alertDistanceVertical           IEEE754Sp               -- metres
+}
+
+
+-- ****************************************************************************
+-- * Select Reference Waypoint                                                *
+-- *                                                                          *
+-- * Message name:    CmndSelectReferenceWaypoint                             *
+-- * Message ID:      6321                                                    *
+-- * Message status:  Optional(2)                                             *
+-- * Frequency:       As required                                             *
+-- * Input/Output:    Input                                                   *
+-- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
+-- * Short Description:                                                       *
+-- *                                                                          *
+-- * This command selects the reference waypoint to be used for the           *
+-- * DataRelativePosition message.                                            *
+-- *                                                                          *
+-- * Notes:                                                                   *
+-- *                                                                          *
+-- ****************************************************************************
+--
+CmndSelectReferenceWaypoint ::= WaypointID
+
+
+-- ****************************************************************************
+-- * Request NMEA                                                             *
+-- *                                                                          *
+-- * Message name:    CmndReqNMEA                                             *
+-- * Message ID:      6380                                                    *
+-- * Message status:  Optional(2)                                             *
+-- * Frequency:       As required                                             *
+-- * Input/Output:    Input                                                   *
+-- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
+-- * Short Description:                                                       *
+-- *                                                                          *
+-- * Request a set of standard NMEA messages to be output to the specified    *
+-- * port at the specified interval. Or set a port to listen for NMEA         *
+-- * messages.                                                                *
+-- *                                                                          *
+-- * Notes:                                                                   *
+-- *                                                                          *
+-- * Setting the port ID to 0 (current port) means the NMEA messages will be  *
+-- * sent in their encapsulated form on the current port using                *
+-- * DataNMEAMessage. Otherwise, the output will be in native NMEA form on    *
+-- * the specified port.                                                      *
+-- *                                                                          *
+-- * If no messages are specified then the port is set to a listening port    *
+-- * to receive messages in NMEA format.                                      *
+-- *                                                                          *
+-- * Any message sets requested replace previous sets requested.              *
+-- *                                                                          *
+-- ****************************************************************************
+--
+CmndReqNMEA ::= SEQUENCE {
+    portID                          PortID,
+    wordPadding                     Pad1bits,
+    nmeaMessages                    SEQUENCE (SIZE(0..127)) OF SEQUENCE {
+        nmeaInterval                    Unsigned8,                  -- Output interval in seconds.
+        wordPadding                     Pad4bits,
+        nmeaDataType                    OCTET STRING (SIZE(0..15))  -- NMEA data message type to be output.
+    }
+}
+
+
+-- ****************************************************************************
+-- * Request RTCM-104                                                         *
+-- *                                                                          *
+-- * Message name:    CmndReqRTCM104                                          *
+-- * Message ID:      6320                                                    *
+-- * Message status:  Optional(2)                                             *
+-- * Frequency:       As required                                             *
+-- * Input/Output:    Input                                                   *
+-- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
+-- * Short Description:                                                       *
+-- *                                                                          *
+-- * Request a set of RTCM-104 messages to be output to the specified port at *
+-- * the specified interval. Or set a port to listen for RTCM-104 messages.   *
+-- *                                                                          *
+-- * Notes:                                                                   *
+-- *                                                                          *
+-- * Setting the port ID to 0 (current port) means the RTCM-104 messages      *
+-- * will be sent in their encapsulated form on the current port using        *
+-- * DataRTCM104Message. Otherwise, the output will be in native RTCM-104     *
+-- * form on the specified port.                                              *
+-- *                                                                          *
+-- * If no messages are specified then the port is set to a listening port    *
+-- * to receive messages in RTCM-104 format.                                  *
+-- *                                                                          *
+-- * Any message sets requested replace previous sets requested.              *
+-- *                                                                          *
+-- ****************************************************************************
+--
+CmndReqRTCM104 ::= SEQUENCE {
+    portID                          PortID,
+    wordPadding                     Pad2bits,
+    rtcmMessages                    SEQUENCE (SIZE(0..63)) OF SEQUENCE {
+        rtcmInterval                    Unsigned8,              -- Output interval in seconds.
+        wordPadding                     Pad2bits,
+        rtcmDataType                    INTEGER (0..63)         -- Message number to be output.
+    }
+}
+
+
+-- ****************************************************************************
+-- * Receiver Software Upload                                                 *
+-- *                                                                          *
+-- * Message name:    CmndRxSoftwareUpload                                    *
+-- * Message ID:      6271                                                    *
+-- * Message status:  Core                                                    *
+-- * Frequency:       As required                                             *
+-- * Input/Output:    Input                                                   *
+-- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
+-- * Short Description:                                                       *
+-- *                                                                          *
+-- * This command provides the receiver with a software upload image and an   *
+-- * associated action parameter.                                             *
+-- *                                                                          *
+-- * Notes:                                                                   *
+-- *                                                                          *
+-- * The image consists of a number of data blocks, each of which consists    *
+-- * of a number of 8-bit bytes. The block data itself is in a vendor         *
+-- * specific format.                                                         *
+-- *                                                                          *
+-- * Blocks must be sent in order and acknowledged before subsequent block    *
+-- * will be accepted.                                                        *
+-- *                                                                          *
+-- * The action parameter is used to request the receiver perform specific    *
+-- * actions.                                                                 *
+-- *                                                                          *
+-- ****************************************************************************
+--
+CmndRxSoftwareUpload ::= SEQUENCE {
+    numberOfBlocks                  Unsigned16,             -- Total number of blocks in the upload
+    blockNumber                     Unsigned16,             -- Block number of this upload.
+    wordPadding                     Pad14bits,
+    uploadActions                   UploadActions,          -- Specify what upload action is to be performed.
+    blockData                       SEQUENCE (SIZE(0..32768)) OF OCTET STRING (SIZE(2))
+}
+
+
+-- ****************************************************************************
+-- * Receiver Software Upload Response                                        *
+-- *                                                                          *
+-- * Message name:    CmndRxSoftwareUploadResponse                            *
+-- * Message ID:      6449                                                    *
+-- * Message status:  Core                                                    *
+-- * Frequency:       As required                                             *
+-- * Input/Output:    Output                                                  *
+-- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
+-- * Short Description:                                                       *
+-- *                                                                          *
+-- * This command is sent by the receiver in response to the                  *
+-- * CmndRxSoftwareUpload command messages.                                   *
+-- *                                                                          *
+-- * Notes:                                                                   *
+-- *                                                                          *
+-- ****************************************************************************
+--
+CmndRxSoftwareUploadResponse ::= SEQUENCE {
+    wordPadding                     Pad14bits,
+-- Specify the response type
+    uploadResponse                  ENUMERATED {
+        responseBusy,                   -- receiver is busy, last upload command ignored
+        responseAbortUpload,            -- receiver has aborted the current upload
+        responsePassed,                 -- last upload command successful
+        responseFailed                  -- last upload command failed
+    }
+}
+
+
+-- ****************************************************************************
+-- * Enable IRIG ports                                                        *
+-- *                                                                          *
+-- * Message name:    CmndEnableIRIGPorts                                     *
+-- * Message ID:      6414                                                    *
+-- * Message status:  Optional(2)                                             *
+-- * Frequency:       As required                                             *
+-- * Input/Output:    Input/Output                                            *
+-- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
+-- * Short Description:                                                       *
+-- *                                                                          *
+-- * This command is used to configure and enable/disable IRIG ports.         *
+-- *                                                                          *
+-- * Notes:                                                                   *
+-- *                                                                          *
+-- ****************************************************************************
+--
+CmndEnableIRIGPorts ::= SEQUENCE {
+    wordPadding                     Pad11bits,
+    portSettings                    SEQUENCE (SIZE(0..16)) OF SEQUENCE {
+        port                            INTEGER (0..255),
+        wordPadding                     Pad6bits,
+        portDirection                   IODirection,
+-- Padded to use 4 bits.
+        irigRate                        ENUMERATED {
+            irigRateA,                      -- 1,000 PPS
+            irigRateB,                      -- 100 PPS
+            irigRateD,                      -- 1 PPM
+            irigRateE,                      -- 10 PPS
+            irigRateG,                      -- 10,000 PPS
+            irigRateH,                      -- 1 PPS
+            reserved6,
+            reserved7,
+            reserved8,
+            reserved9,
+            reserved10,
+            reserved11,
+            reserved12,
+            reserved13,
+            reserved14,
+            reserved15
+        },
+-- Padded to use 4 bits.
+        irigFormDesignation             ENUMERATED {
+            irigFormDesDCLS,                -- DCLS (width coded)
+            irigFormDesSin,                 -- Sine wave carrier (amplitude modulated)
+            reserved2,
+            reserved3,
+            reserved4,
+            reserved5,
+            reserved6,
+            reserved7,
+            reserved8,
+            reserved9,
+            reserved10,
+            reserved11,
+            reserved12,
+            reserved13,
+            reserved14,
+            reserved15
+        },
+-- Padded to use 4 bits.
+        irigCarrierResolution           ENUMERATED {
+            irigCarrierResNone,             -- No carrier (DCLS)
+            irigCarrierRes100Hz,            -- 100 Hz (10 ms resolution)
+            irigCarrierRes1kHz,             -- 1 kHz (1 ms resolution)
+            irigCarrierRes10kHz,            -- 10 kHz (0.1 ms resolution)
+            irigCarrierRes100kHz,           -- 100 kHz (0.01 ms resolution)
+            irigCarrierRes1MHz,             -- 1 MHz (0.001 ms resolution)
+            reserved6,
+            reserved7,
+            reserved8,
+            reserved9,
+            reserved10,
+            reserved11,
+            reserved12,
+            reserved13,
+            reserved14,
+            reserved15
+            },
+-- Padded to use 4 bits.
+        irigCodedExpressions            ENUMERATED {
+            irigCodedExpBCDCFSBS,           -- BCD, CF and SBS
+            irigCodedExpBCDCF,              -- BCD and CF
+            irigCodedExpBCD,                -- BCD
+            irigCodedExpBCDSBS,             -- BCD and SBS
+            reserved4,
+            reserved5,
+            reserved6,
+            reserved7,
+            reserved8,
+            reserved9,
+            reserved10,
+            reserved11,
+            reserved12,
+            reserved13,
+            reserved14,
+            reserved15
+        }
+    }
+}
+
+
+-- ****************************************************************************
+-- * Enable PTTI ports                                                        *
+-- *                                                                          *
+-- * Message name:    CmndEnablePTTIPorts                                     *
+-- * Message ID:      6418                                                    *
+-- * Message status:  Optional(2)                                             *
+-- * Frequency:       As required                                             *
+-- * Input/Output:    Input/Output                                            *
+-- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
+-- * Short Description:                                                       *
+-- *                                                                          *
+-- * This command is used to configure and enable/disable PTTI ports.         *
+-- *                                                                          *
+-- * Notes:                                                                   *
+-- *                                                                          *
+-- ****************************************************************************
+--
+CmndEnablePTTIPorts ::= SEQUENCE {
+    wordPadding                     Pad11bits,
+    portSettings                    SEQUENCE (SIZE(0..16)) OF SEQUENCE {
+        port                            INTEGER (0..255),
+        wordPadding                     Pad6bits,
+        portDirection                   IODirection,
+        wordPadding1                    Pad13bits,
+-- This type defines the available settings for the PTTI ports
+        pttiStandard                    ENUMERATED {
+            pttiGPS0601PPS,                 -- GPS-060 1PPS
+            pttiGPS0601PPM,                 -- GPS-060 1PPM
+            pttiGPS060BCD,                  -- GPS-060 Binary Coded Decimal
+            pttiGPS060TFD,                  -- GPS-060 Timing Fault Discrete
+            ptti4246                        -- STANAG 4246 / 4372 as further defined in GPS-ICD-60 Rev A
+        }
+    }
+}
+
+
+-- ****************************************************************************
+-- * Request Corrected Sat Range Info                                         *
+-- *                                                                          *
+-- * Message name:    CmndConnectCorrectedSatRangeInfo                        *
+-- * Message ID:      6400                                                    *
+-- * Message status:  Optional(2)                                             *
+-- * Frequency:       As required                                             *
+-- * Input/Output:    Input                                                   *
+-- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
+-- * Short Description:                                                       *
+-- *                                                                          *
+-- * This message requests connection to, and disconnection from, the         *
+-- * DataCorrectedSatRangeInfo message at a user specified repeat interval    *
+-- * and to a port other than the current communications port.                *
+-- * PortID 0 refers to the current port..                                    *
+-- * The other parameters allow the user to select what satellites to provide *
+-- * the range information for.                                               *
+-- *                                                                          *
+-- * Notes:                                                                   *
+-- *                                                                          *
+-- * The output interval for the message is defined in seconds. It is ignored *
+-- * if the GSSIP header DISCONNECT flag is set. If the GSSIP CONNECT flag is *
+-- * set then the message is set to send at the given interval.               *
+-- * If the interval is set to 0 the default rate for the message is used.    *
+-- * If the interval is set to -1, then the connection is 'on-change'.        *
+-- * If 'on-change' is requested then the message is scheduled for one        *
+-- * transmission, and then scheduled to resend whenever data has changed.    *
+-- * All other negative rates are reserved and will be rejected.              *
+-- *                                                                          *
+-- ****************************************************************************
+--
+CmndConnectCorrectedSatRangeInfo ::= SEQUENCE {
+    wordPadding                     Pad8bits,
+    portID                          PortID,
+    interval                        IEEE754Sp,              -- Output interval in seconds - see Notes.
+    wordPadding1                    Pad15bits,
+    rangesReported                  ENUMERATED {
+        inSolution,                 -- satellites in solution
+        inView                      -- satellites in view
+    },
+    maxRanges                       Unsigned16,             -- limits the maximum number of ranges to return per epoch, or 0 for unlimited
+    signalIDs                       MultiSignalID           -- limits the signals of interest, or 0 for any
+}
+
+
+-- ****************************************************************************
+-- * Request Raw Sat Range Info                                               *
+-- *                                                                          *
+-- * Message name:    CmndConnectRawSatRangeInfo                              *
+-- * Message ID:      6397                                                    *
+-- * Message status:  Optional(2)                                             *
+-- * Frequency:       As required                                             *
+-- * Input/Output:    Input                                                   *
+-- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
+-- * Short Description:                                                       *
+-- *                                                                          *
+-- * This message defines the signals for which the information is to be      *
+-- * returned when the appropriate data message is submitted. It thereby      *
+-- * allows the user to filter out unwanted data.                             *
+-- *                                                                          *
+-- * This message requests connection to, and disconnection from, the         *
+-- * DataRawSatRangeInfo message at a user specified repeat interval and to a *
+-- * port other than the current communications port.                         *
+-- * PortID 0 refers to the current port..                                    *
+-- * The other parameters allow the user to select what satellites to provide *
+-- * the range information for.                                               *
+-- *                                                                          *
+-- * Notes:                                                                   *
+-- *                                                                          *
+-- * The output interval for the message is defined in seconds. It is ignored *
+-- * if the GSSIP header DISCONNECT flag is set. If the GSSIP CONNECT flag is *
+-- * set then the message is set to send at the given interval.               *
+-- * If the interval is set to 0 the default rate for the message is used.    *
+-- * If the interval is set to -1, then the connection is 'on-change'.        *
+-- * If 'on-change' is requested then the message is scheduled for one        *
+-- * transmission, and then scheduled to resend whenever data has changed.    *
+-- * All other negative rates are reserved and will be rejected.              *
+-- *                                                                          *
+-- ****************************************************************************
+--
+CmndConnectRawSatRangeInfo ::= SEQUENCE {
+    wordPadding                     Pad8bits,
+    portID                          PortID,
+    interval                        IEEE754Sp,              -- Output interval in seconds - see Notes.
+    wordPadding1                    Pad15bits,
+    rangesReported                  ENUMERATED {
+        inSolution,                 -- satellites in solution
+        inView                      -- satellites in view
+    },
+    maxRanges                       Unsigned16,             -- limits the maximum number of ranges to return per epoch, or 0 for unlimited
+    signalIDs                       MultiSignalID           -- limits the signals of interest, or 0 for any
+}
+
+
+-- ****************************************************************************
+-- * Request Sat Range Residuals                                              *
+-- *                                                                          *
+-- * Message name:    CmndReqSatRangeResiduals                                *
+-- * Message ID:      6433                                                    *
+-- * Message status:  Optional(2)                                             *
+-- * Frequency:       As required                                             *
+-- * Input/Output:    Input/Output                                            *
+-- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
+-- * Short Description:                                                       *
+-- *                                                                          *
+-- * This message defines the signals for which the information is to be      *
+-- * returned when the appropriate data message is submitted. It thereby      *
+-- * allows the user to filter out unwanted data.                             *
+-- *                                                                          *
+-- * Notes:                                                                   *
+-- *                                                                          *
+-- ****************************************************************************
+--
+CmndReqSatRangeResiduals ::= MultiSignalID
+
+
+-- ****************************************************************************
+-- * Request Raw Nav Page Symbols                                             *
+-- *                                                                          *
+-- * Message name:    CmndReqRawNavPageSymbols                                *
+-- * Message ID:      6450                                                    *
+-- * Message status:  Optional(2)                                             *
+-- * Frequency:       As required                                             *
+-- * Input/Output:    Input/Output                                            *
+-- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
+-- * Short Description:                                                       *
+-- *                                                                          *
+-- * This message defines the signals for which the information is to be      *
+-- * returned when the appropriate data message is submitted. It thereby      *
+-- * allows the user to filter out unwanted data.                             *
+-- *                                                                          *
+-- * Notes:                                                                   *
+-- *                                                                          *
+-- ****************************************************************************
+--
+CmndReqRawNavPageSymbols ::= MultiSignalID
+
+
+-- ****************************************************************************
+-- * Request Raw Nav Page Bits                                                *
+-- *                                                                          *
+-- * Message name:    CmndReqRawNavPageBits                                   *
+-- * Message ID:      6419                                                    *
+-- * Message status:  Optional(2)                                             *
+-- * Frequency:       As required                                             *
+-- * Input/Output:    Input/Output                                            *
+-- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
+-- * Short Description:                                                       *
+-- *                                                                          *
+-- * This message defines the signals for which the information is to be      *
+-- * returned when the appropriate data message is submitted. It thereby      *
+-- * allows the user to filter out unwanted data.                             *
+-- *                                                                          *
+-- * Notes:                                                                   *
+-- *                                                                          *
+-- ****************************************************************************
+--
+CmndReqRawNavPageBits ::= MultiSignalID
+
+
+END

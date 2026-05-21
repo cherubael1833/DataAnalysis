@@ -1,0 +1,259 @@
+StatusMessages DEFINITIONS
+AUTOMATIC TAGS ::=
+
+BEGIN
+
+EXPORTS ALL ;
+
+IMPORTS
+    Pad1bits, Pad2bits, Pad3bits, Pad4bits, Pad5bits, Pad6bits, Pad7bits, Pad8bits,
+    Pad9bits, Pad10bits, Pad11bits, Pad12bits, Pad13bits, Pad14bits, Pad15bits,
+    Unsigned32
+    FROM FundamentalDataTypes
+
+    TimeStamp, DescriptionInfo, MessageOctet, HostMessageVersion, MultiSignalID,
+    CorrectionServiceSupport, IODirection, DynamicsSupport
+    FROM CommonFieldDefinitions
+;
+
+
+-- ****************************************************************************
+-- * Receiver Simple Version Information                                      *
+-- *                                                                          *
+-- * Message name:    StatusRxSimpleVersionInfo                               *
+-- * Message ID:      6452                                                    *
+-- * Message status:  Core                                                    *
+-- * Frequency:       Once                                                    *
+-- * Input/Output:    Output                                                  *
+-- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
+-- * Short Description:                                                       *
+-- *                                                                          *
+-- * This message contains the HostICD version and vendor identifier,         *
+-- * followed by the receiver description, model, product serial number and   *
+-- * version number.                                                          *
+-- *                                                                          *
+-- * Notes:                                                                   *
+-- *                                                                          *
+-- * HostMessageVersion is a constant defined in CommonFieldDefinitions       *
+-- * representing the version of the GNSS Sensor Host ICD Messages the        *
+-- * receiver conforms to.                                                    *
+-- *                                                                          *
+-- * vendorID should consist of readable ASCII characters, indicating the     *
+-- * vendor name, right padded with the space character ('20'H) to achieve    *
+-- * the correct length.                                                      *
+-- *                                                                          *
+-- * All other descriptions are as specified by the receiver vendor but must  *
+-- * fit into the defined DescriptionInfo type.                               *
+-- *                                                                          *
+-- ****************************************************************************
+--
+StatusRxSimpleVersionInfo ::= SEQUENCE {
+    validityTime                    TimeStamp,
+    hostMessageVersion              HostMessageVersion,     -- See Notes
+    vendorID                        DescriptionInfo,        -- See Notes
+    rxDescription                   DescriptionInfo,        -- See Notes
+    model                           DescriptionInfo,        -- See Notes
+    productSerialNumber             DescriptionInfo,        -- See Notes
+    versionNumber                   DescriptionInfo         -- See Notes
+}
+
+
+-- ****************************************************************************
+-- * Receiver Component Detailed Version Information                          *
+-- *                                                                          *
+-- * Message name:    StatusRxComponentDetailedInfo                           *
+-- * Message ID:      6260                                                    *
+-- * Message status:  Optional(2)                                             *
+-- * Frequency:       Once                                                    *
+-- * Input/Output:    Output                                                  *
+-- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
+-- * Short Description:                                                       *
+-- *                                                                          *
+-- * This message contains detailed version information for each of the       *
+-- * versioned components within the receiver, e.g. cards, processors,        *
+-- * FPGAs etc.                                                               *
+-- *                                                                          *
+-- * Notes:                                                                   *
+-- *                                                                          *
+-- * Each component reports with a logical component number followed by the   *
+-- * fixed DescriptionInfo strings for the various identifying descriptions   *
+-- * and numbers and an optional variable length block for any other          *
+-- * information.                                                             *
+-- *                                                                          *
+-- ****************************************************************************
+--
+StatusRxComponentDetailedInfo ::= SEQUENCE {
+    validityTime                    TimeStamp,
+    componentsDescriptions          ComponentDescriptions
+}
+
+ComponentDescriptions ::= SEQUENCE {
+    logicalComponentID              INTEGER (0..65535),
+    componentDescription            DescriptionInfo,
+    model                           DescriptionInfo,
+    productSerialNumber             DescriptionInfo,
+    hardwareVersion                 DescriptionInfo,
+    firmwareVersion                 DescriptionInfo,
+    softwareVersion                 DescriptionInfo,
+    wordPadding                     Pad6bits,
+    vendorBlock                     SEQUENCE (SIZE(0..512)) OF MessageOctet
+}
+
+
+-- ****************************************************************************
+-- * Receiver Capability                                                      *
+-- *                                                                          *
+-- * Message name:    StatusRxCapability                                      *
+-- * Message ID:      6262                                                    *
+-- * Message status:  Core                                                    *
+-- * Frequency:       Once                                                    *
+-- * Input/Output:    Output                                                  *
+-- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
+-- * Short Description:                                                       *
+-- *                                                                          *
+-- * This message returns a number of values determining the capability of    *
+-- * the receiver.                                                            *
+-- *                                                                          *
+-- * Notes:                                                                   *
+-- *                                                                          *
+-- ****************************************************************************
+--
+StatusRxCapability ::= SEQUENCE {
+    validityTime                    TimeStamp,
+    servicesSupported               MultiSignalID,              -- list of constellations/services supported
+    numberOfTrackers                INTEGER (0..65535),         -- total number of trackers implemented
+    maxNumberOfRoutes               INTEGER (0..65535),         -- maximum number of routes supported
+    maxNumberOfWaypoints            INTEGER (0..65535),         -- maximum number of waypoints supported
+    maxNumberOfWaypointsPerRoute    INTEGER (0..65535),         -- maximum number of waypoints allowed in a route
+    dynamicsSupported               DynamicsSupport,            -- bit flags detailing the dynamics regimes supported
+    correctionServicesSupported     CorrectionServiceSupport,   -- bit flags showing correction services supported
+    raimSupported                   BOOLEAN,                    -- TRUE if RAIM supported
+    powerManagementSupported        BOOLEAN,                    -- TRUE if power management supported
+    rtcm104Supported                IODirection,                -- directions for which RTCM104 messages are supported (none/in/out/both)
+    nmeaSupported                   IODirection,                -- directions for which NMEA messages are supported (none/in/out/both)
+    wordPadding1                    Pad2bits,
+    logicalCommunicationsPorts      SEQUENCE (SIZE(0..254)) OF SEQUENCE {
+        lcpPort                         INTEGER (0..254),           -- logical communications port number
+        wordPadding                     Pad5bits,
+-- Choices 1 to 8 sent as 0 to 7 down the wire.
+        lcpType                         CHOICE {                -- logical communications port type e.g. serial, ethernet etc.
+            serial                          SEQUENCE {              -- parameters specific to type
+                maxBaudRateRxOut                Unsigned32,             -- bits per second, e.g. 4800, 9600 etc, or 0 for not supported for output
+                maxBaudRateRxIn                 Unsigned32              -- bits per second, e.g. 4800, 9600 etc, or 0 for not supported for input
+            },
+            reserved1                       NULL,                   -- placeholder for future interface support
+            reserved2                       NULL,                   -- placeholder for future interface support
+            reserved3                       NULL,                   -- placeholder for future interface support
+            reserved4                       NULL,                   -- placeholder for future interface support
+            reserved5                       NULL,                   -- placeholder for future interface support
+            reserved6                       NULL,                   -- placeholder for future interface support
+            reserved7                       NULL                    -- placeholder for future interface support
+        }
+    },
+    ppsPorts                        SEQUENCE (SIZE(0..255)) OF LPNAndDirection,
+    frequencyPorts                  SEQUENCE (SIZE(0..255)) OF LPNAndDirection,         -- only expected to be output (from the receiver)
+    eventPorts                      SEQUENCE (SIZE(0..255)) OF LPNAndDirection,         -- only expected to be input (to the receiver)
+    pttiPorts                       SEQUENCE (SIZE(0..255)) OF LPNAndDirection,
+    irigPorts                       SEQUENCE (SIZE(0..255)) OF LPNAndDirection
+}
+
+-- Defines a logical port number and specifies the directions (in/out or both) supported
+LPNAndDirection ::= SEQUENCE {
+    lpn                             INTEGER (0..255),       -- logical port number
+    wordPadding                     Pad6bits,
+    direction                       IODirection             -- direction of logical port supported
+}
+
+
+-- ****************************************************************************
+-- * Receiver BIT Status                                                      *
+-- *                                                                          *
+-- * Message name:    StatusRxBITStatus                                       *
+-- * Message ID:      6437                                                    *
+-- * Message status:  Core                                                    *
+-- * Frequency:       As required                                             *
+-- * Input/Output:    Output                                                  *
+-- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
+-- * Short Description:                                                       *
+-- *                                                                          *
+-- * This message contains the receiver, antenna amplifier, antenna and       *
+-- * frequency reference Built-In-Test (BIT) results.                         *
+-- *                                                                          *
+-- * Notes:                                                                   *
+-- *                                                                          *
+-- * The message also contains the ability to provide vendor specific fault   *
+-- * and/or status information. Vendors should document their specific use    *
+-- * of this field.                                                           *
+-- *                                                                          *
+-- ****************************************************************************
+--
+StatusRxBITStatus ::= SEQUENCE {
+    validityTime                    TimeStamp,
+    rxBITStatus                     RxBITStatus,
+    wordPadding                     Pad6bits,
+    vendorStatusInfo                SEQUENCE (SIZE(0..1023)) OF MessageOctet
+}
+
+RxBITStatus ::= SEQUENCE {
+-- This type sets the receiver operating mode
+    rxOperatingMode                 ENUMERATED {
+        rxOperatingModeTest,            -- receiver in test mode
+        rxOperatingModeInit,            -- receiver initialising
+        rxOperatingModeNav              -- receiver in navigation/operational mode
+    },
+-- This type sets the receiver BIT mode
+    rxBITMode                       ENUMERATED {
+        rxBITModeContinuous,            -- continuous BIT mode
+        rxBITModeStartUp,               -- BIT on start-up
+        rxBITModeUserTriggered          -- BIT user triggered
+    },
+-- This type gives a receiver BIT summary
+    rxBITSummary                    ENUMERATED {
+        rxBITSummaryOkToUse,            -- receiver is OK to use
+        rxBITSummaryServicingRequired,  -- receiver requires servicing
+        rxBITSummaryFault,              -- the receiver has a fault
+        rxBITSummaryFail                -- the receiver has failed
+    },
+    wordPadding                     Pad2bits,
+    rxBITFault                      BOOLEAN,                -- FALSE = OK, TRUE = Fault
+    rxPowerBITFault                 BOOLEAN,                -- FALSE = OK, TRUE = Fault
+    antennaBITFault                 BOOLEAN,                -- FALSE = OK, TRUE = Fault
+    antennaPowerBITFault            BOOLEAN,                -- FALSE = OK, TRUE = Fault
+    frequencyRefBITFault            BOOLEAN,                -- FALSE = OK, TRUE = Fault
+    wordPadding1                    Pad3bits
+}
+
+
+-- ****************************************************************************
+-- * Event Log Output                                                         *
+-- *                                                                          *
+-- * Message name:    StatusEventLogOutput                                    *
+-- * Message ID:      6374                                                    *
+-- * Message status:  Optional(2)                                             *
+-- * Frequency:       As required                                             *
+-- * Input/Output:    Output                                                  *
+-- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
+-- * Short Description:                                                       *
+-- *                                                                          *
+-- * This message contains event logs that are generated by the GNSS          *
+-- * receiver.                                                                *
+-- *                                                                          *
+-- * Notes:                                                                   *
+-- *                                                                          *
+-- * For the output of event logs that are generated by the GNSS sensor.      *
+-- * The contents is vendor specific and the vendor should document the       *
+-- * structure and contents.  Event Log messages may not be split over two or *
+-- * more messages.                                                           *
+-- *                                                                          *
+-- ****************************************************************************
+--
+StatusEventLogOutput ::= SEQUENCE {
+    validityTime                    TimeStamp,
+    eventLogMessages                SEQUENCE {
+        wordPadding                     Pad5bits,
+        eventLogMessage                 SEQUENCE (SIZE(0..1024)) OF MessageOctet
+    }
+}
+
+
+END

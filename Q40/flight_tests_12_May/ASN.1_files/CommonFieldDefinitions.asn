@@ -1,0 +1,1450 @@
+CommonFieldDefinitions DEFINITIONS
+AUTOMATIC TAGS ::=
+
+BEGIN
+
+EXPORTS ALL ;
+
+IMPORTS
+    Pad1bits, Pad2bits, Pad3bits, Pad4bits, Pad5bits, Pad6bits, Pad7bits, Pad8bits,
+    Pad9bits, Pad10bits, Pad11bits, Pad12bits, Pad13bits, Pad14bits, Pad15bits,
+    Pad16bits, Pad17bits, Pad18bits, Pad19bits, Pad24bits, Pad25bits,
+    Unsigned8, Unsigned12, Unsigned16, Unsigned24, Unsigned32, IEEE754Sp, IEEE754Dp
+    FROM FundamentalDataTypes
+;
+
+
+-- ****************************************************************************
+-- * HostMessageVersion is a constant of type DescriptionInfo which           *
+-- * represents the version of the GNSS Sensor Host Messages. The string      *
+-- * should be in three elements, xx.zz.zz, where xx represents the major,    *
+-- * yy the minor and zz the release version of the Host Messages that the    *
+-- * receiver conforms to.                                                    *
+-- *                                                                          *
+-- * Each element is two digits, with '0' prepended if necessary, separated   *
+-- * by '.', and encoded in ASCII. The string is right padded with the space  *
+-- * character ('20'H) to fill the DescriptionInfo field.                     *
+-- *                                                                          *
+-- * E.g. the version comprising Major version = 1, Minor version = 2,        *
+-- * Release version = 3, is formed into a string "01.02.03        ",         *
+-- * including the leading '0' and trailing spaces, and is encoded as         *
+-- * '30312E30322E30332020202020202020'H.                                     *
+-- *                                                                          *
+-- * The MessageVersion is returned in message StatusRxSimpleVersionInfo      *
+-- * allowing a host to determine the Message Version that the receiver       *
+-- * conforms to.                                                             *
+-- *                                                                          *
+-- ****************************************************************************
+HostMessageVersion ::=              DescriptionInfo ('30302E31392E30302020202020202020'H)  -- "00.19.00        "
+
+
+-- This type determines the AJAS mode.
+AJASMode ::= ENUMERATED {
+    ajasModeAutomatic,
+    ajasModeDetection,
+    ajasModeDetectionAndMitigation,
+    ajasModeOff
+}
+
+
+-- This type specifies the reference for height/altitude measurements, all wrt selected datum.
+AltitudeRef ::= ENUMERATED {
+    altRefInvalid,                  -- height not valid
+    altRefEllipsoid,                -- height above ellipsoid
+    altRefGeoid,                    -- height above geoid
+    altRefOrigin                    -- height above origin (Earth centre of mass)
+}
+
+
+-- This type specifies an angular bearing and the reference.
+-- All bearings are in degrees, 0 <= value < 360.0, in a clockwise rotation,
+-- where 0 degrees is the given reference.
+AngularDir ::= SEQUENCE {
+    angle                           IEEE754Sp,              -- degrees wrt to the given northReference (0 <= value < 360)
+    wordPadding                     Pad14bits,
+    northRef                        NorthRef                -- True, Magnetic or Grid
+}
+
+
+-- This type reports or selects multiple BeiDou signals (or indicates that the receiver should do so automatically).
+-- Padded to use 24 bits.
+BDSMultiSignalID ::= SEQUENCE {
+    bdsSigAutoChoose                BOOLEAN,
+    bdsSigL1OS                      BOOLEAN,
+    bdsSigL1Encrypted               BOOLEAN,
+    bdsSigL2OS                      BOOLEAN,
+    bdsSigL2Encrypted               BOOLEAN,
+    reservedBits                    Pad19bits
+}
+
+
+-- This type reports or selects a single BeiDou signal (or indicates that the receiver should do so automatically).
+-- Padded to use 4 bits.
+BDSSignalID ::= ENUMERATED {
+    bdsSigNone,
+    bdsSigAutoChoose,
+    bdsSigL1OS,
+    bdsSigL1Encrypted,
+    bdsSigL2OS,
+    bdsSigL2Encrypted,
+    reserved6,
+    reserved7,
+    reserved8,
+    reserved9,
+    reserved10,
+    reserved11,
+    reserved12,
+    reserved13,
+    reserved14,
+    reserved15
+}
+
+
+-- This type allows a GNSS/SBAS constellation to be reported or selected
+-- (or indicates that the receiver should do so automatically).
+ConstellationID ::= SEQUENCE {
+    wordPadding                     Pad12bits,
+-- Padded to use 4 bits.
+    constellationID                 ENUMERATED {
+        constellationNone,              -- No GNSS/SBAS is/has been identified
+        constellationAutoChoose,        -- Auto choose constellation(s)
+        constellationGPS,               -- GPS
+        constellationGal,               -- Galileo
+        constellationGLO,               -- GLONASS
+        constellationBDS,               -- BeiDou
+        reserved6,
+        reserved7,
+        reserved8,
+        reserved9,
+        reserved10,
+        reserved11,
+        reserved12,
+        reserved13,
+        reserved14,
+        constellationSBAS               -- SBAS
+    }
+}
+
+
+-- This type reports or selects a correction service.
+-- Padded to use 4 bits.
+CorrectionService ::= ENUMERATED {
+    correctionNone,                 -- no correction in use
+    correctionDGPS,                 -- differential GPS in use
+    correctionSBAS,                 -- SBAS in use
+    correctionRTK,                  -- RTK in use
+    correctionPPP,                  -- PPP in use
+    reserved5,
+    reserved6,
+    reserved7,
+    reserved8,
+    reserved9,
+    reserved10,
+    reserved11,
+    reserved12,
+    reserved13,
+    reserved14,
+    reserved15
+}
+
+
+-- This type stores correction services supported.
+-- Padded to use 16 bits.
+CorrectionServiceSupport ::= SEQUENCE {
+    correctionDGPS                  BOOLEAN,                -- differential GPS in use
+    correctionSBAS                  BOOLEAN,                -- SBAS in use
+    correctionRTK                   BOOLEAN,                -- RTK in use
+    correctionPPP                   BOOLEAN,                -- PPP in use
+    reserved4                       BOOLEAN,
+    reserved5                       BOOLEAN,
+    reserved6                       BOOLEAN,
+    reserved7                       BOOLEAN,
+    reserved8                       BOOLEAN,
+    reserved9                       BOOLEAN,
+    reserved10                      BOOLEAN,
+    reserved11                      BOOLEAN,
+    reserved12                      BOOLEAN,
+    reserved13                      BOOLEAN,
+    reserved14                      BOOLEAN,
+    reserved15                      BOOLEAN
+}
+
+
+-- This type defines a cyber attack status.
+CyberAttackStatus ::= ENUMERATED {
+    cyberStatusNoCyberAttackDetected,
+    cyberStatusAttackDetectedAndMitigated,
+    cyberStatusAttackAlarm
+}
+
+
+-- This type identifies cyber attack types.
+-- Padded to use 16 bits.
+CyberAttackTypes ::= SEQUENCE {
+    none                            BOOLEAN,
+    invalidNavData                  BOOLEAN,
+    reservedBits                    Pad13bits,
+    other                           BOOLEAN                 -- indicates a cyber attack of undefined type
+}
+
+
+-- This type is used to flag the source of ephemeris/almanac/clock and ionospheric data.
+-- Padded to use 8 bits
+DataSource ::= SEQUENCE {
+    wordPadding                     Pad5bits,
+    dataSource                      ENUMERATED {
+        dsUnknown,                      -- unknown/un-authenticated source
+        dsSatellite,                    -- source is an un-authenticated satellite navigation message
+        dsSatelliteAuth,                -- source is an authenticated/protected satellite navigation message
+        dsExternal,                     -- source is an unauthenticated external source
+        dsExternalTrusted               -- source is from an external trusted and/or authenticated source
+    }
+}
+
+-- This type contains date and time fields.
+DateTime ::= SEQUENCE {
+    timeReference                   TimeReference,
+    yearValid                       BOOLEAN,
+    monthValid                      BOOLEAN,
+    dayValid                        BOOLEAN,
+    wordPadding                     Pad1bits,
+    year                            Unsigned12,
+    month                           INTEGER (0..12),        -- 0 is not valid; month will be in the range 1..12, January to December
+    day                             INTEGER (0..31),        -- 0 is not valid; day will be in the range 1..31
+    hour                            INTEGER (0..23),
+    minute                          INTEGER (0..59),
+    second                          INTEGER (0..60),        -- range set 0-60 in order to cater for UTC leap second adjustments
+    wordPadding1                    Pad2bits
+}
+
+
+-- This type specifies the geodetic datum to be used.
+--
+-- List is from NATO STANAG 2211 which references NATO Standard AGeoP-21.
+-- Remaining values are spare/reserved.
+-- Note 1: A "0" in the Datum Number field of an output message indicates that
+-- the Datum to be used is the default Datum which is WGS-84 (wge(267)).
+-- Refer to the Datum Code field to identify the Datum.
+-- Note 2: User defined Datums may be programmed by the host.
+DatumID ::= INTEGER {
+    defaultDatum(0),-- Note 1
+    acc(1),         -- ACCRA, Ghana
+    adiE(2),        -- ADINDAN, Burkina Faso
+    adiF(3),        -- ADINDAN, Cameroon
+    adiA(4),        -- ADINDAN, Ethiopia
+    adiC(5),        -- ADINDAN, Mali
+    adiM(6),        -- ADINDAN, Mean
+    adiD(7),        -- ADINDAN, Senegal
+    adiB(8),        -- ADINDAN, Sudan
+    aia(9),         -- ANTIGUA ISLAND ASTRO 1943, Antigua
+    ainA(10),       -- AIN EL ABD 1970, Bahrain
+    ainB(11),       -- AIN EL ABD 1970, Saudi Arabia
+    ama(12),        -- AMERICAN SAMOA 1962, Samoa Islands
+    ame7(13),       -- RD AMERSFOORT, Netherlands
+    ano(14),        -- ANNA 1 ASTRO 1965, Cocos Islands
+    arfM(15),       -- ARC 1950, Southern Africa
+    arfA(16),       -- ARC 1950, Botswana
+    arfH(17),       -- ARC 1950, Burundi
+    arfB(18),       -- ARC 1950, Lesotho
+    arfC(19),       -- ARC 1950, Malawi
+    arfD(20),       -- ARC 1950, Swaziland
+    arfE(21),       -- ARC 1950, Zaire
+    arfF(22),       -- ARC 1950, Zambia
+    arf7(23),       -- ARC 1950, Zimbabwe
+    ars7(24),       -- ARC 1960, Kenya
+    arsB(25),       -- ARC 1960, Tanzania
+    asc(26),        -- ASCENSION ISLAND 1958, Ascension
+    asm(27),        -- MONTSERRAT IS. ASTRO 1958, Montserrat
+    asq(28),        -- ASTRO STATION 1952, Marcus Islands
+    atf(29),        -- ASTRO BEACON E 1845, Iwo Jima
+    aua(30),        -- AUSTRALIAN GEODETIC 1966, Australia
+    aug7(31),       -- AUSTRALIAN GEODETIC 1984, Australia
+    bat(32),        -- DJAKARTA, Indonesia
+    bek7(33),       -- BEKAA BASE SOUTH END, Lebanon
+    ber(34),        -- BERMUDA 1957, Bermuda
+    bid(35),        -- BISSAU, Guinea Bissau
+    boo(36),        -- BOGOTA OBSERVATORY, Colombia
+    bre(37),        -- BERNE (1898), Switzerland
+    bur(38),        -- BUKIT RIMPAH, Indonesia
+    cac(39),        -- CAPE CANAVERAL, Florida & Bahamas
+    cai(40),        -- CAMPO INCHAUSPE 1969, Argentina
+    cao(41),        -- CANTON ASTRO 1966, Phoenix Islands
+    cap(42),        -- CAPE, South Africa
+    caz(43),        -- CAMP AREA ASTRO, Antarctica
+    ccd7cz(44),     -- S-JTSK, Czech Republic
+    ccd7sk(45),     -- S-JTSK, Slovakia
+    cge(46),        -- CARTHAGE, Tunisia
+    chi(47),        -- CHATHAM ISLAND ASTRO 1971, New Zealand
+    chu(48),        -- CHUA ASTRO, Paraguay
+    chw7(49),       -- CH1903+, Switzerland
+    coa(50),        -- CORREGO ALEGRE, Brazil
+    cpr7(51),       -- OBSERVATOROI, Mozambique South
+    cyp7(52),       -- CYPRUS 1935, Cyprus
+    cse(53),        -- ESTONIA 1937, Estonia
+    dal(54),        -- DABOLA, Guinea
+    did(55),        -- DECEPTION ISLAND, Antarctica
+    dob(56),        -- GUX 1 ASTRO, Guadalcanal Island
+    eas(57),        -- EASTER ISLAND 1967, Easter Island
+    enw(58),        -- WAKE-ENIWETOK 1960, Marshall Islands
+    eurM(59),       -- EUROPEAN DATUM 1950, Europe
+    eurA(60),       -- EUROPEAN DATUM 1950, Western Europe
+    eurC(61),       -- EUROPEAN DATUM 1950, Norway & Finland
+    eur7dk(62),     -- EUROPEAN DATUM 1950, Denmark
+    eurcha(63),     -- EUROPEAN DATUM 1950, Channel Islands
+    eurD(64),       -- EUROPEAN DATUM 1950, Portugal and Spain
+    eurpt(65),      -- EUROPEAN DATUM 1950, Portugal
+    eur7es3(66),    -- EUROPEAN DATUM 1950, Balearic Islands
+    eur7es1(67),    -- EUROPEAN DATUM 1950, Spain (except NW)
+    eur7es2(68),    -- EUROPEAN DATUM 1950, Spain NW
+    eurgi(69),      -- EUROPEAN DATUM 1950, Gibraltar
+    eurI(70),       -- EUROPEAN DATUM 1950, Italy - Sardinia
+    eurJ(71),       -- EUROPEAN DATUM 1950, Italy - Sicily
+    eurL(72),       -- EUROPEAN DATUM 1950, Malta
+    eurcs(73),      -- EUROPEAN DATUM 1950, Former Yugoslavia N
+    eurB(74),       -- EUROPEAN DATUM 1950, Greece
+    eur7cy(75),     -- EUROPEAN DATUM 1950, Cyprus
+    eur7tr(76),     -- EUROPEAN DATUM 1950, Turkey
+    eur7dz(77),     -- EUROPEAN DATUM 1950, Algeria
+    eurT(78),       -- EUROPEAN DATUM 1950, Tunisia
+    eurF(79),       -- EUROPEAN DATUM 1950, Egypt
+    eur7lb(80),     -- EUROPEAN DATUM 1950, Lebanon
+    eurH(81),       -- EUROPEAN DATUM 1950, Iran
+    eurS(82),       -- EUROPEAN DATUM 1950, Middle East
+    eur7om(83),     -- EUROPEAN DATUM 1950, Oman
+    euseu(84),      -- EUROPEAN 1979, Europe
+    euspt(85),      -- EUROPEAN 1979, Portugal
+    eut(86),        -- ETRF89, Europe
+    fah7(87),       -- FAHUD, Oman
+    flo(88),        -- OBSERVATORIO MET. 1939, Flores
+    fot(89),        -- FORT THOMAS 1955, St Kitts-Nevis
+    gaa(90),        -- GAN 1970, Rep. of Maldives
+    gds(91),        -- GEOCENTRIC DATUM AUSTRALIA, Australia
+    geo7(92),       -- GEODETIC DATUM 1949, New Zealand
+    giz(93),        -- DOS 1968, Gizo Islands
+    gra(94),        -- GRACIOSA BASE SW 1948, Azores
+    grx(95),        -- GGRS87, Greece
+    gse(96),        -- GUNUNG SEGARA, Indonesia
+    gua(97),        -- GUAM 1963, Guam
+    hel7(98),       -- HELSINKI KALLIO CHURCH, Finland
+    hen(99),        -- HERAT NORTH, Afghanistan
+    her7at(100),    -- MGI DATUM / HERMANNSKOGEL, Austria
+    her7cs(101),    -- HERMANNSKOGEL, Former Yugoslavia
+    hit(102),       -- HITO XVIII 1963, Chile
+    hjo(103),       -- HJORSEY 1955, Iceland
+    hkd(104),       -- HONG KONG 1963, Hong Kong
+    hke(105),       -- HONG KONG 1980, Hong Kong
+    htn(106),       -- HU-TZU-SHAN, Taiwan
+    huy7(107),      -- HUNGARIAN DATUM 1972, Hungary
+    ibe(108),       -- BELLEVUE (IGN), Efate Island
+    idn(109),       -- INDONESIAN 1974, Indonesia
+    ikb(110),       -- IRAQ-KUWAIT BOUNDARY 1992, Iraq/ Kuwait
+    ind7(111),      -- INDIAN, Bangladesh
+    indI(112),      -- INDIAN, India & Nepal
+    indP(113),      -- INDIAN, Pakistan
+    infA(114),      -- INDIAN 1954, Thailand
+    ingB(115),      -- INDIAN 1960, Con Son Island
+    ingA(116),      -- INDIAN 1960, Vietnam
+    inhA1(117),     -- 1 INDIAN 1975, Thailand
+    irl7(118),      -- IRELAND 1965, Ireland
+    isg(119),       -- ISTS 061 ASTRO 1968, South Georgia
+    ist(120),       -- ISTS 073 Astro 1969, Diego Garcia
+    joh(121),       -- JOHNSTON ISLAND 1961, Johnston Island
+    kan7(122),      -- KANDAWALA JACKSON?, Sri Lanka
+    kea7(123),      -- KERTAU 1948, Malaysia W & Sing.
+    keg(124),       -- KERGUELEN ISLAND 1949, Kerguelen Island
+    kgs(125),       -- KOREAN GEODETIC SYSTEM 1995, South Korea
+    kkx7(126),      -- KKJ, Finland
+    kus(127),       -- KUSAIE ASTRO 1951, Caroline Island
+    lcf(128),       -- LC5 ASTRO 1961, Cayman Brac
+    leh7(129),      -- LEIGON, Ghana
+    lib(130),       -- LIBERIA 1964, Liberia
+    lis7(131),      -- LISBON (Castelo di Sao Jorge) D73, Portugal
+    lth(132),       -- LKS94, Lithuania
+    luzB(133),      -- LUZON, Philippines - Mindanao
+    luzA(134),      -- LUZON, Philippines
+    mas(135),       -- MASSAWA, Eritrea
+    mer(136),       -- MERCHICH, Morocco
+    mid(137),       -- MIDWAY ASTRO 1961, Midway Islands
+    mik(138),       -- MAHE 1971, Seychelles - Mahe Is.
+    minA(139),      -- MINNA, Cameroon
+    minB(140),      -- MINNA, Nigeria
+    mod7it(141),    -- ROME 1940, Italy mainland
+    mod7srd(142),   -- ROME 1940, Italy - Sardinia
+    mod7scn(143),   -- ROME 1940, Italy - Sicily
+    mpo(144),       -- M'PORALOKO, Gabon
+    mvs(145),       -- VITI LEVU 1916, Fiji - Viti Levu
+    nahA(146),      -- NAHRWAN, Oman - Masirah Island
+    nahC(147),      -- NAHRWAN, Saudi Arabia
+    nahB(148),      -- NAHRWAN, United Arab Emirates
+    nap(149),       -- NAPARIMA, Trinidad & Tobago
+    narA(150),      -- NORTH AMERICAN 1983, US - Alaska
+    narE(151),      -- NORTH AMERICAN 1983, US - Aleutian
+    narB(152),      -- NORTH AMERICAN 1983, Canada
+    narC(153),      -- NORTH AMERICAN 1983, US - CONUS
+    narH(154),      -- NORTH AMERICAN 1983, US - Hawaii
+    narD(155),      -- NORTH AMERICAN 1983, Mexico
+    nasD(156),      -- NORTH AMERICAN 1927, US - Alaska
+    nasE(157),      -- NORTH AMERICAN 1927, Canada
+    nasF(158),      -- NORTH AMERICAN 1927, Canada - Alberta/ British Columbia
+    nasV(159),      -- NORTH AMERICAN 1927, US - Aleutian East
+    nasW(160),      -- NORTH AMERICAN 1927, US - Aleutian West
+    nasQ(161),      -- NORTH AMERICAN 1927, Bahamas
+    nasO(162),      -- NORTH AMERICAN 1927, Canal Zone
+    nasP(163),      -- NORTH AMERICAN 1927, Caribbean
+    nasN(164),      -- NORTH AMERICAN 1927, Central America
+    nasC(165),      -- NORTH AMERICAN 1927, US - CONUS
+    nasT(166),      -- NORTH AMERICAN 1927, Cuba
+    nasG(167),      -- NORTH AMERICAN 1927, Canada East
+    nasA(168),      -- NORTH AMERICAN 1927, US - Eastern
+    nasU(169),      -- NORTH AMERICAN 1927, Greenland
+    nasH(170),      -- NORTH AMERICAN 1927, Canada - Manitoba/ Ontario
+    nasL(171),      -- NORTH AMERICAN 1927, Mexico
+    nasI(172),      -- NORTH AMERICAN 1927, Canada - NW Territory
+    nasR(173),      -- NORTH AMERICAN 1927, San Salvador
+    nasB(174),      -- NORTH AMERICAN 1927, US - Western
+    nasJ(175),      -- NORTH AMERICAN 1927, Canada - Yukon
+    nfr(176),       -- NTF, France
+    ngo7(177),      -- NGO 1948, Norway
+    nsd(178),       -- NORTH SAHARA 1959, Algeria
+    odu7(179),      -- BELGIUM DATUM 1972, Belgium
+    oeg(180),       -- OLD EGYPTIAN 1907, Egypt
+    ogb7(181),      -- ORDNANCE GB 1936, GB - Great Britain
+    ohaM(182),      -- OLD HAWAIIAN, US - Hawaii Mean
+    ohaA(183),      -- OLD HAWAIIAN, US - Hawaii
+    ohaB(184),      -- OLD HAWAIIAN, US - Kauai
+    ohaC(185),      -- OLD HAWAIIAN, US - Maui
+    ohaD(186),      -- OLD HAWAIIAN, US - Oahu
+    ohiM(187),      -- OLD HAWAIIAN, US - Hawaii
+    ohiA(188),      -- OLD HAWAIIAN, US - Hawaii
+    ohiB(189),      -- OLD HAWAIIAN, US - Kauai
+    ohiC(190),      -- OLD HAWAIIAN, US - Maui
+    ohiD(191),      -- OLD HAWAIIAN, US - Oahu
+    pal(192),       -- PALESTINE 1928, Israel
+    pha(193),       -- AYABELLA LIGHTHOUSE, Djibouti
+    pit(194),       -- PITCAIRN ASTRO 1967, Pitcairn Island
+    pln(195),       -- PICO DE LAS NIEVES., Spain - Canary Islands
+    pos(196),       -- PORTO SANTO 1936., Portugal - Madeira
+    prpA(197),      -- PROV. S AMERICAN 1956, Bolivia
+    prpD(198),      -- PROV. S AMERICAN 1956, Colombia
+    prpE(199),      -- PROV. S AMERICAN 1956, Ecuador
+    prpF(200),      -- PROV. S AMERICAN 1956, Guyana
+    prpB(201),      -- PROV. S AMERICAN 1956, Chile North
+    prpG(202),      -- PROV. S AMERICAN 1956, Peru
+    prpM(203),      -- PROV. S AMERICAN 1956, South America
+    prpC(204),      -- PROV. S AMERICAN 1956, Chile South
+    prp7(205),      -- PROV. S AMERICAN 1956, Venezuela
+    ptb(206),       -- POINT 58, Burkina Faso & Niger
+    ptn(207),       -- POINT NOIRE 1948, Congo
+    puk(208),       -- PULKOVO 1942, Russia
+    puk7de(209),    -- PULKOVO 1942, Germany
+    puk7ee(210),    -- PULKOVO 1942, Estonia
+    pur(211),       -- PUERTO RICO & Virgin Is., Puerto Rico & Virgin Islands
+    qat7(212),      -- QATAR NATIONAL 1974, Qatar
+    qar7(213),      -- QATAR NATIONAL 1995, Qatar
+    quo(214),       -- QORNOQ, Greenland South
+    rau7(215),      -- DHDN (RAUENBERG), Germany
+    reu(216),       -- REUNION, Mascarene Is
+    rts7(217),      -- RT90, Sweden
+    sae(218),       -- SANTO (DOS) 1965, Vanuatu - Espiritu Santo
+    sanA(219),      -- SOUTH AMERICAN 1969, Argentina
+    sanJ(220),      -- SOUTH AMERICAN 1969, Galapagos
+    sanB(221),      -- SOUTH AMERICAN 1969, Bolivia
+    sanC(222),      -- SOUTH AMERICAN 1969, Brazil
+    sanD(223),      -- SOUTH AMERICAN 1969, Chile
+    sanE(224),      -- SOUTH AMERICAN 1969, Colombia
+    sanF(225),      -- SOUTH AMERICAN 1969, Ecuador
+    sanG(226),      -- SOUTH AMERICAN 1969, Guyana
+    sanH(227),      -- SOUTH AMERICAN 1969, Paraguay
+    sanI(228),      -- SOUTH AMERICAN 1969, Peru
+    sanM(229),      -- SOUTH AMERICAN 1969, South America
+    sanK(230),      -- SOUTH AMERICAN 1969, Trinidad
+    sanL(231),      -- SOUTH AMERICAN 1969, Venezuela
+    sao(232),       -- SAO BRAZ, Santa Maria Islands
+    sap7(233),      -- SAPPER HILL 1943 (2000 adj, Falkland Islands
+    sck(234),       -- SCHWARZECK, Namibia
+    sei7(235),      -- SOUTH EAST ISLAND, Seychelles
+    sga7(236),      -- SOVIET GEODETIC SYSTEM 85, Russia
+    sgb7(237),      -- PZ90 (GLONASS), Russia
+    sgm(238),       -- SELVAGEM GRANDE 1938, Salvage Island
+    shb(239),       -- ASTRO DOS 71/4, St Helena
+    sib(240),       -- SIERRA LEONE DATUM 1960, Sierra Leone
+    sir(241),       -- SIRGAS, South America
+    soa(242),       -- SOUTH ASIA, Singapore
+    spkF(243),      -- S-42 (PULKOVO 1942), Albania
+    spkC(244),      -- S-42 (PK42), Czechoslovakia
+    spkA(245),      -- S-42 (PULKOVO 1942), Hungary
+    spkD(246),      -- S-42 (PULKOVO 1942), Latvia
+    spkE(247),      -- S-42 (PK 1942), Kazakhstan
+    spk7(248),      -- SYSTEM 1942/58 (PULKOVO 1942), Poland
+    spkB(249),      -- S-42 (PULKOVO 1942), Poland
+    spkG(250),      -- S-42 (PULKOVO 1942), Romania
+    spkI(251),      -- S-42 (PULKOVO 1942), Romania
+    spkH(252),      -- S-42 (PULKOVO 1942), Afghanistan
+    tan7(253),      -- TANANARIVE OBSERVATORY, Madagascar
+    tdc(254),       -- TRISTAN ASTRO 1968, Tristan da Cunha
+    tec7(255),      -- TETE, Mozambique
+    til7(256),      -- TIMBALAI 1948 (Everest), Malaysia E & Brunei
+    tim7(257),      -- TIMBALAI 1968 Adj of 1948, Malaysia E & Brunei
+    tin7(258),      -- TIMBALAI 1968 Adj of 1948, Malaysia E & Brunei
+    tiv7(259),      -- TIMBALAI 1948 (Bessel), Malaysia E & Brunei
+    toyA(260),      -- TOKYO, Japan
+    toyB1(261),     -- TOKYO, South Korea
+    toyC(262),      -- TOKYO, Japan - Okinawa
+    trn(263),       -- ASTRO TERN ISLAND (FRIG) 1961, Antarctica
+    voi(264),       -- VOIROL 1875, Algeria
+    wak(265),       -- WAKE ISLAND ASTRO 1952, Wake Island
+    wgc7(266),      -- WORLD GEODETIC SYSTEM 1972, World
+    wge(267),       -- WORLD GEODETIC SYSTEM 1984, World
+    yac(268),       -- YACARE, Uruguay
+    zan(269),       -- ZANDERIJ, Suriname
+    user0(65500),   -- USER DEFINED DATUM 0, Note 2
+    user1(65501),   -- USER DEFINED DATUM 1, Note 2
+    user2(65502),   -- USER DEFINED DATUM 2, Note 2
+    user3(65503),   -- USER DEFINED DATUM 3, Note 2
+    user4(65504),   -- USER DEFINED DATUM 4, Note 2
+    user5(65505),   -- USER DEFINED DATUM 5, Note 2
+    user6(65506),   -- USER DEFINED DATUM 6, Note 2
+    user7(65507),   -- USER DEFINED DATUM 7, Note 2
+    user8(65508),   -- USER DEFINED DATUM 8, Note 2
+    user9(65509)    -- USER DEFINED DATUM 9, Note 2
+} (0..65535)
+
+
+-- This type is used for the description fields.
+DescriptionInfo ::= OCTET STRING (SIZE(16))
+
+
+-- This type identifies dilution of precision values for several different parameters.
+-- When there is insufficient information to calculate dilution of precision, values
+-- should default to the maximum value of the variable type.
+DilutionOfPrecision ::= SEQUENCE {
+    horizontalDilutionOfPrecision   Unsigned8,              -- unitless (scale factor = 0.1)
+    verticalDilutionOfPrecision     Unsigned8,              -- unitless (scale factor = 0.1)
+    geometricDilutionOfPrecision    Unsigned8,              -- unitless (scale factor = 0.1)
+    timeDilutionOfPrecision         Unsigned8,              -- unitless (scale factor = 0.1)
+    positionDilutionOfPrecision     Unsigned8,              -- unitless (scale factor = 0.1)
+    wordPadding                     Pad8bits                -- to pad out to three words
+}
+
+
+-- Specify the anticipated dynamics (see comments).
+-- Padded to use 4 bits.
+DynamicsMode ::= ENUMERATED {
+    dynamicsAutoSelect,             -- allow the receiver to automatically adapt to the  platform dynamics and environment
+    dynamicsFixed,                  -- receiver is installed in a fixed location and shall not move in operation
+    dynamicsLow,                    -- receiver is hand-held and typically operating in a mounted/dismounted environment operating at velocities less than ~50 m/s (approx. 100 Knots) and at accelerations less than ~4g
+    dynamicsMedium,                 -- receiver is mounted on a moving platform capable of travelling at sustained velocities up to ~600 m/s (~1,200 Knots) and maximum acceleration of ~10g
+    dynamicsHigh,                   -- receiver is mounted on a very fast/agile moving platform (e.g. a fighter aircraft) capable of travelling at speeds of up to ~Mach 10 and capable of acceleration/deceleration up to ~50g
+    dynamicsUltraHigh,              -- receivers mounted in hypersonic platforms (e.g. weapons, munitions) capable of exceeding HD speeds and with acceleration/deceleration, jerk etc. up to ~1000g
+    reserved6,
+    reserved7,
+    reserved8,
+    reserved9,
+    reserved10,
+    reserved11,
+    reserved12,
+    reserved13,
+    reserved14,
+    reserved15
+}
+
+
+-- Specify the anticipated dynamics .
+-- Padded to use 16 bits.
+DynamicsSupport ::= SEQUENCE {
+    dynamicsFixed                   BOOLEAN,                -- see DynamicsMode notes
+    dynamicsLow                     BOOLEAN,                -- see DynamicsMode notes
+    dynamicsMedium                  BOOLEAN,                -- see DynamicsMode notes
+    dynamicsHigh                    BOOLEAN,                -- see DynamicsMode notes
+    dynamicsUltraHigh               BOOLEAN,                -- see DynamicsMode notes
+    reserved5                       BOOLEAN,                -- see DynamicsMode notes
+    reserved6                       BOOLEAN,
+    reserved7                       BOOLEAN,
+    reserved8                       BOOLEAN,
+    reserved9                       BOOLEAN,
+    reserved10                      BOOLEAN,
+    reserved11                      BOOLEAN,
+    reserved12                      BOOLEAN,
+    reserved13                      BOOLEAN,
+    reserved14                      BOOLEAN,
+    reserved15                      BOOLEAN
+}
+
+
+-- This type identifies the status of the position/time fix.
+-- Padded to use 4 bits.
+FixStatus ::= ENUMERATED {
+    fixStatusNone,                  -- no fix
+    fixStatusFixedRx,               -- receiver location is fixed.
+    fixStatusTwoDimensional,        -- fix in 2 dimensions (position is fixed to the geoid or at a specified altitude)
+    fixStatusThreeDimensional,      -- fix in 3 dimensions
+    fixStatusDeadReckoning,         -- fix from/based on dead reckoning
+    reserved5,
+    reserved6,
+    reserved7,
+    reserved8,
+    reserved9,
+    reserved10,
+    reserved11,
+    reserved12,
+    reserved13,
+    reserved14,
+    reserved15
+}
+
+
+-- This type reports or selects multiple Galileo signals (or indicates that the receiver should do so automatically).
+-- Padded to use 24 bits.
+GalMultiSignalID ::= SEQUENCE {
+    galSigAutoChoose                BOOLEAN,
+    galSigE1bc                      BOOLEAN,
+    galSigE5a                       BOOLEAN,
+    galSigE5b                       BOOLEAN,
+    galSigE6bc                      BOOLEAN,
+    galSigE1a                       BOOLEAN,
+    galSigE6a                       BOOLEAN,
+    reservedBits                    Pad17bits
+}
+
+
+-- As defined in Galileo-OS-SIS-ICD.
+GalSignalHealthIndicator ::= ENUMERATED {
+    galSigHealthOK,                 -- Signal OK
+    galSigHealthOutOfService,       -- Signal out of service
+    galSigHealthWillBeOutOfService, -- Signal will be out of service
+    galSigHealthInTest              -- Signal Component currently in test
+}
+
+
+-- This type reports or selects a single Galileo signal (or indicates that the receiver should do so automatically).
+-- Padded to use 4 bits.
+GalSignalID ::= ENUMERATED {
+    galSigNone,
+    galSigAutoChoose,
+    galSigE1bc,
+    galSigE5a,
+    galSigE5b,
+    galSigE6bc,
+    galSigE1a,
+    galSigE6a,
+    reserved8,
+    reserved9,
+    reserved10,
+    reserved11,
+    reserved12,
+    reserved13,
+    reserved14,
+    reserved15
+}
+
+
+-- This type reports or selects multiple GLONASS signals (or indicates that the receiver should do so automatically).
+-- Padded to use 24 bits.
+GLOMultiSignalID ::= SEQUENCE {
+    gloSigAutoChoose                BOOLEAN,
+    gloSigL1OF                      BOOLEAN,
+    gloSigL1SFEncrypted             BOOLEAN,
+    gloSigL2OF                      BOOLEAN,
+    gloSigL2SFEncrypted             BOOLEAN,
+    gloSigL3OC                      BOOLEAN,
+    gloSigL1OC                      BOOLEAN,
+    gloSigL1SCEncrypted             BOOLEAN,
+    gloSigL2OC                      BOOLEAN,
+    gloSigL2SCEncrypted             BOOLEAN,
+    reservedBits                    Pad14bits
+}
+
+
+-- This type reports or selects a single GLONASS signal (or indicates that the receiver should do so automatically).
+-- Padded to use 4 bits.
+GLOSignalID ::= ENUMERATED {
+    gloSigNone,
+    gloSigAutoChoose,
+    gloSigL1OF,
+    gloSigL1SFEncrypted,
+    gloSigL2OF,
+    gloSigL2SFEncrypted,
+    gloSigL3OC,
+    gloSigL1OC,
+    gloSigL1SCEncrypted,
+    gloSigL2OC,
+    gloSigL2SCEncrypted,
+    reserved11,
+    reserved12,
+    reserved13,
+    reserved14,
+    reserved15
+}
+
+
+-- This type gives the GNSS time as a number of seconds into a week, and a
+-- number of weeks into an epoch (e.g. year).
+GNSSTime ::= SEQUENCE {
+    wordPadding                     Pad8bits,
+    timeOfWeek                      Unsigned24,             -- Number of seconds into current week
+    weekNumber                      Unsigned16              -- Number of weeks into current epoch
+}
+
+
+-- This type reports or selects multiple GPS signals (or indicates that the receiver should do so automatically).
+-- Padded to use 24 bits.
+GPSMultiSignalID ::= SEQUENCE {
+    gpsSigAutoChoose                BOOLEAN,
+    gpsSigL1CA                      BOOLEAN,
+    gpsSigL1C                       BOOLEAN,
+    gpsSigL2CM                      BOOLEAN,
+    gpsSigL2CL                      BOOLEAN,
+    gpsSigL5                        BOOLEAN,
+    gpsSigL1PY                      BOOLEAN,
+    gpsSigL2PY                      BOOLEAN,
+    gpsSigL1MCode                   BOOLEAN,
+    gpsSigL2MCode                   BOOLEAN,
+    reservedBits                    Pad14bits
+}
+
+
+-- This type reports or selects a single GPS signal (or indicates that the receiver should do so automatically).
+-- Padded to use 4 bits.
+GPSSignalID ::= ENUMERATED {
+    gpsSigNone,
+    gpsSigAutoChoose,
+    gpsSigL1CA,
+    gpsSigL1C,
+    gpsSigL2CM,
+    gpsSigL2CL,
+    gpsSigL5,
+    gpsSigL1PY,
+    gpsSigL2PY,
+    gpsSigL1MCode,
+    gpsSigL2MCode,
+    reserved11,
+    reserved12,
+    reserved13,
+    reserved14,
+    reserved15
+}
+
+
+-- HoldType determines how the parameter is held.
+HoldType ::= ENUMERATED {
+    holdTypeOff,                    -- the parameter is not held and is determined by the navigation solution calculation engine
+    holdTypeCurrentValue,           -- the parameter is held at the current value (when the hold is applied)
+    holdTypeProvidedValue           -- the parameter is set to, and held at, the value passed
+}
+
+
+-- This type identifies the Interference and Jamming status.
+-- Padded to use 4 bits.
+InterferenceAndJammingStatus ::= ENUMERATED {
+    ijStatusNoInterferenceOrJammingDetected,
+    ijStatusTolerableInterferenceOrJammingDetected,
+    ijStatusSevereInterferenceOrJammingAlarm,
+    reserved3,
+    reserved4,
+    reserved5,
+    reserved6,
+    reserved7,
+    reserved8,
+    reserved9,
+    reserved10,
+    reserved11,
+    reserved12,
+    reserved13,
+    reserved14,
+    reserved15
+}
+
+
+-- This type identifies Interference and Jamming types.
+-- Padded to use 16 bits.
+InterferenceAndJammingTypes ::= SEQUENCE {
+    none                            BOOLEAN,
+    pulse                           BOOLEAN,
+    cw                              BOOLEAN,
+    chirp                           BOOLEAN,
+    partialBandNoise                BOOLEAN,
+    fullBandNoise                   BOOLEAN,
+    reservedBits                    Pad9bits,
+    other                           BOOLEAN                 -- indicates jamming/interference of undefined type
+}
+
+
+-- This type is used to specify an input or an output capability.
+IODirection ::= ENUMERATED {
+    iodNotUsed,                     -- not used/off
+    iodInput,                       -- input (to receiver)
+    iodOutput,                      -- output (from receiver)
+    iodBidirectional                -- bi-directional (if applicable)
+}
+
+
+-- This type reports or selects ionospheric correction methods (or indicates that the receiver should do so automatically).
+-- Padded to use 4 bits.
+IonoCorrection ::= ENUMERATED {
+    ionoCorrectionNone,             -- no correction applied
+    ionoCorrectionAuto,             -- receiver to select correction method
+    ionoCorrectionDualFrequency,    -- correction via linear combination of observations of differing frequency
+    ionoCorrectionModel,            -- correction via mathematical model utilising navigation broadcast correction parameters
+    ionoCorrectionIsFrozen,         -- previous correction value applied
+    ionoCorrectionAided,            -- correction via external system e.g. none
+    reserved6,
+    reserved7,
+    reserved8,
+    reserved9,
+    reserved10,
+    reserved11,
+    reserved12,
+    reserved13,
+    reserved14,
+    reserved15
+}
+
+
+-- This type identifies a lever arm value consisting of X, Y and Z components, each measured in
+-- metres. The reference Lever Arm Coordinate System is shown in Figure 2-1 in [AD-1].
+LeverArmXYZ ::= SEQUENCE {
+    x                               IEEE754Sp,              -- metres
+    y                               IEEE754Sp,              -- metres
+    z                               IEEE754Sp               -- metres
+}
+
+
+-- This type is used to specify a line state high/low value.
+LineState ::= ENUMERATED {
+    lineStateLow,                   -- low
+    lineStateHigh,                  -- high
+    lineStateTri                    -- tri-state
+}
+
+
+-- This type identifies the logical tracker ID used internally and is used to request control handoff.
+LogicalTrackerID ::= INTEGER (0..65535)
+
+
+-- This type reports or selects magnetic variation sources (or indicates that the receiver should do so automatically).
+-- Padded to use 4 bits.
+MagneticVariationSource ::= ENUMERATED {
+    magVarSourceNone,               -- magnetic variation is not available
+    magVarSourceAutoChoose,         -- receiver to select magnetic variation source
+    magVarSourceLocal,              -- local magnetic variation
+    magVarSourceModel,              -- modelled magnetic variation
+    magVarSourceModelUnverified,    -- model used but model is expired or validity can't be confirmed
+    reserved5,
+    reserved6,
+    reserved7,
+    reserved8,
+    reserved9,
+    reserved10,
+    reserved11,
+    reserved12,
+    reserved13,
+    reserved14,
+    reserved15
+}
+
+
+-- This type is used in messages to define an octet (8 bit byte).
+MessageOctet ::= OCTET STRING (SIZE(1))
+
+
+-- This type allows multiple multi-signal identifiers to be reported or selected.
+MultiSignalID ::= SEQUENCE{
+    wordPadding                     Pad12bits,
+    signalIDs                       SEQUENCE (SIZE(0..15)) OF SignalID
+}
+
+
+-- This type identifies the navigation solution mode employed.
+-- Padded to use 4 bits.
+NavSolutionMode ::= ENUMERATED {
+    navSolModeAutoChoose,                                   -- receiver may choose (not used in reporting nav solution mode in use)
+    navSolModeGNSSUnfiltered,                               -- GNSS unfiltered navigation solution (e.g. least squares approach)
+    navSolModeGNSSFiltered,                                 -- GNSS navigation solution, determined using navigation filtering approach (e.g. Kalman)
+    navSolModeMultiSensorIntegrationUncoupled,              -- GNSS navigation solution periodically resets inertial navigation solution
+    navSolModeMultiSensorIntegrationLooselyCoupled,         -- GNSS navigation solution is used in a navigation filter to correct inertial solution
+    navSolModeMultiSensorIntegrationTightlyCoupled,         -- GNSS measurements (e.g. pseudorange) are used in a navigation filter to correct inertial solution
+    navSolModeMultiSensorIntegrationUltraTightlyCoupled,    -- GNSS correlator measurements are used in a navigation filter to correct inertial solution which aids tracking
+    reserved7,
+    reserved8,
+    reserved9,
+    reserved10,
+    reserved11,
+    reserved12,
+    reserved13,
+    reserved14,
+    reserved15
+}
+
+
+-- This type specifies the reference for an angular bearing.
+NorthRef ::= ENUMERATED {
+    northRefInvalid,                -- referenced to unknown or invalid reading
+    northRefTrue,                   -- referenced to True North
+    northRefMagnetic,               -- referenced to Magnetic North
+    northRefGrid                    -- referenced to Grid North
+}
+
+
+-- This type is used to specify which persistent information is to be saved or reset
+-- when either CmndSaveConfigData or CmndResetConfigData is executed.
+-- Notes:
+-- When ephemeral data is selected, that is the missionData and navData,
+-- the receiver will save the data periodically according to the receiver implementation.
+-- Other data will be saved only when the command is issued.
+-- Padded to use 32 bits.
+NVRAMSection ::=  SEQUENCE {
+    entireNVRAM                     BOOLEAN,                -- if this bit is set then all the following bits are ignored
+    missionData                     BOOLEAN,                -- includes position and time data
+    navData                         BOOLEAN,                -- includes all the current almanac, ephemeris, iono and clock data
+    waypointsAndRoutes              BOOLEAN,                -- includes all waypoints and routes data
+    configurationSettings           BOOLEAN,                -- includes all configuration data as returned by CmndReportRxConfig, EXCLUDING CmndSetSignals data
+    connectedMessages               BOOLEAN,                -- includes the currently connected messages and their ports and rates
+    satSignalSelection              BOOLEAN,                -- includes the currently selected satellite signals
+    reservedBits                    Pad25bits               -- reserved for future use
+}
+
+
+-- This type uniquely identifies each logical communications port in the system.
+-- Logical ports are numbered from 1.
+--
+-- - portCurrent(0),
+-- - port1(1),
+-- - port2(2),
+-- - port3(3),
+-- - port4(4),
+-- - portAll(255)
+PortID ::= INTEGER {
+    portCurrent(0),
+    port1(1),
+    port2(2),
+    port3(3),
+    port4(4),
+    portAll(255)
+} (0..255)
+
+
+-- This type specifies the 3-D position in the selected position format and using the specified datum and altitude reference.
+Position ::= SEQUENCE {
+    datumID                         DatumID,
+    wordPadding                     Pad14bits,
+    altitudeRef                     AltitudeRef,
+    wordPadding1                    Pad13bits,
+-- Choices 1 to N are sent as 0 to N-1 down the wire and equate to the PositionFormatID.
+    position CHOICE {
+        posLatLon SEQUENCE {
+            positionLLA                     PositionLLA
+        },
+        posMGRSold SEQUENCE {
+            gzd                             OCTET STRING (SIZE(2)),     -- Two character grid zone designator
+            sqID                            OCTET STRING (SIZE(2)),     -- Two character 100,000m square identifier
+            positionENA                     PositionENA                 -- Easting, northing and altitude
+        },
+        posMGRSnew SEQUENCE {
+            gzd                             OCTET STRING (SIZE(2)),     -- Two character grid zone designator
+            sqID                            OCTET STRING (SIZE(2)),     -- Two character 100,000m square identifier
+            positionENA                     PositionENA                 -- Easting, northing and altitude
+        },
+        posUTM SEQUENCE {
+            wordPadding                     Pad10bits,
+            zoneNumber                      INTEGER(0..60),             -- Zone number
+            wordPadding1                    Pad8bits,
+            bandLetter                      MessageOctet,               -- Latitude band letter
+            positionENA                     PositionENA
+        },
+        posUPS SEQUENCE {
+            wordPadding                     Pad10bits,
+            zoneNumber                      INTEGER(0..60),             -- Zone number
+            positionENA                     PositionENA
+        },
+        posBNG SEQUENCE {
+            gzd                             OCTET STRING (SIZE(2)),     -- Two character grid zone designator
+            positionENA                     PositionENA
+        },
+        posITMG SEQUENCE {
+            wordPadding                     Pad8bits,
+            gridLetter                      MessageOctet,               -- One character grid letter
+            positionENA                     PositionENA
+        },
+        posUSNG SEQUENCE {
+            gzd                             OCTET STRING (SIZE(2)),     -- Two character grid zone designator
+            sqID                            OCTET STRING (SIZE(2)),     -- Two character 100,000m square identifier
+            positionENA                     PositionENA
+        }
+    }
+}
+
+
+-- This type identifies a position, consisting of an Easting, a Northing and an altitude.
+-- Eastings and Northings are measured in metres referenced to the selected grid and datum.
+-- Altitude is measured in metres.
+-- When used in Position, the altitude is referenced to ellipsoid, geoid or origin
+-- (centre of the Earth) as determined by CmndSetPositionFormat, with default being height
+-- above ellipsoid.
+PositionENA ::= SEQUENCE {
+    easting                         IEEE754Dp,      -- metres
+    northing                        IEEE754Dp,      -- metres
+    altitude                        IEEE754Dp       -- metres
+}
+
+
+-- This type identifies the position Figure of Merit accuracy range.
+-- This is a 3-D position FOM when the receiver is reporting 3-D position.
+PositionFigureOfMerit ::= ENUMERATED {
+    posFOM0,                        --  undefined
+    posFOM1,                        --          accuracy <= 0.001m
+    posFOM2,                        -- 0.001m < accuracy <= 0.01m
+    posFOM3,                        -- 0.01m  < accuracy <= 0.1m
+    posFOM4,                        -- 0.1m   < accuracy <= 1m
+    posFOM5,                        -- 1m     < accuracy <= 2.5m
+    posFOM6,                        -- 2.5m   < accuracy <= 10m
+    posFOM7,                        -- 10m    < accuracy <= 25m
+    posFOM8,                        -- 25m    < accuracy <= 100m
+    posFOM9,                        -- 100m   < accuracy <= 250m
+    posFOM10,                       -- 250m   < accuracy <= 1000m
+    posFOM11,                       -- 1000m  < accuracy <= 2500m
+    posFOM12,                       -- 2500m  < accuracy <= 10000m
+    posFOM13                        -- 10000m < accuracy
+}
+
+
+-- This type specifies the format and grid to be used when reporting position.
+-- The default (0) is for position to be given in lat/lon IEEE754 degrees using the WGS-84 datum.
+-- Each format has a default datum, as given in the comments in [] brackets.
+PositionFormatID ::= INTEGER {
+    pfLatLon(0),                    -- Latitude and longitude in decimal degrees [WGS-84 - wge(267)]
+    pfMGRSold(1),                   -- Military Grid Reference System - old [WGS-84 - wge(267)]
+    pfMGRSnew(2),                   -- Military Grid Reference System - new [WGS-84 - wge(267)]
+    pfUTM(3),                       -- Universal Transverse Mercator [WGS-84 - wge(267)]
+    pfUPS(4),                       -- Universal Polar Stereographic [WGS-84 - wge(267)]
+    pfBNG(5),                       -- British National Grid [OSGB36 - ogb7(181)]
+    pfITMG(6),                      -- Irish Transverse Mercator Grid [IRELAND 1965 - irl7(118)]
+    pfUSNG(7)                       -- United States National Grid [NAD83 - narC(153)]
+} (0..65535)
+
+
+-- This type identifies a position, consisting of a latitude, a longitude and an altitude.
+-- Latitude and longitude are measured in degrees, in the datum selected (default is WGS-84).
+-- Altitude is measured in metres.
+-- When used in Position, the altitude is referenced to ellipsoid, geoid or origin
+-- (centre of the Earth) as determined by CmndSetPositionFormat, with default being height
+-- above ellipsoid.
+-- When used in DataCoreNavSolution, the altitude is height above ellipsoid.
+PositionLLA ::= SEQUENCE {
+    latitude                        IEEE754Dp,              -- degrees (-90.0 <= value <= +90.0)
+    longitude                       IEEE754Dp,              -- degrees (-180.0 <= value < +180.0)
+    altitude                        IEEE754Dp               -- metres
+}
+
+
+-- This type identifies an ECEF style position, consisting of a X distance, a Y distance and a Z distance.
+-- All distances are measured in metres, in the datum selected (default is WGS-84).
+PositionXYZ ::= SEQUENCE {
+    x                               IEEE754Dp,              -- metres
+    y                               IEEE754Dp,              -- metres
+    z                               IEEE754Dp               -- metres
+}
+
+
+-- This type identifies the Quality Flag (QFlag).
+-- Flag is set to TRUE when ALL the following are true:
+--  * Estimated Position Error <100m,
+--  * Estimated Time Error < 100us,
+--  * there are sufficient satellites in solution for selected fix mode,
+--  * PDOP < 5
+--  * no unmitigable spoofing, cyber attack or interference has been detected,
+--  * only healthy satellites have been used,
+--  * the receiver considers the solution to be trustworthy (derived from a sufficient number of trusted sources).
+-- If the flag is not set (i.e. set to FALSE) then the metadata should be used to understand the risks.
+QFlag ::= BOOLEAN
+
+
+-- This type reports or selects a mode of RAIM.
+-- Padded to use 4 bits.
+RAIMMode ::= ENUMERATED {
+    raimModeNone,                           -- no RAIM performed
+    raimModeAutoChooseRAIMMode,             -- auto only valid when selecting RAIM mode (input to Rx)
+    raimModeFaultDetection,                 -- FD  - Detects whether faulty observations are present
+    raimModeFaultDetectionAndExclusion,     -- FDE - Detects whether faulty observations are present, if a fault is detected a subset of non-faulty observations is selected for use in the navigation solution
+    raimModeFaultDetectionAndIsolation,     -- FDI - Detects whether faulty observations are present, if a fault is detected the faulty observation is identified and excluded from the navigation solution
+    reserved5,
+    reserved6,
+    reserved7,
+    reserved8,
+    reserved9,
+    reserved10,
+    reserved11,
+    reserved12,
+    reserved13,
+    reserved14,
+    reserved15
+}
+
+
+-- This type reports or selects a type of RAIM.
+-- Padded to use 4 bits.
+RAIMType ::= ENUMERATED {
+    raimTypeAutoChoose,
+    raimTypeGeneralPurpose,
+    raimTypeDO229,
+    reserved3,
+    reserved4,
+    reserved5,
+    reserved6,
+    reserved7,
+    reserved8,
+    reserved9,
+    reserved10,
+    reserved11,
+    reserved12,
+    reserved13,
+    reserved14,
+    reserved15
+}
+
+
+-- This type is used as a place holder for future constellations.
+ReservedMultiSignalID ::= Pad24bits
+
+
+-- This type defines a RouteID.
+-- ID 0 is special and cannot contain data and is used to signify all or no routes depending on context.
+RouteID ::= SEQUENCE {
+    wordPadding                         Pad8bits,
+    routeID                             INTEGER (0..255)
+}
+
+
+-- This type reports or selects satellite clock correction methods (or indicates that the receiver should do so automatically).
+-- Padded to use 4 bits.
+SatClockCorrection ::= ENUMERATED {
+    satClockCorrectionNone,
+    satClockCorrectionAuto,
+    satClockCorrectionBroadcast,
+    satClockCorrectionAided,
+    reserved4,
+    reserved5,
+    reserved6,
+    reserved7,
+    reserved8,
+    reserved9,
+    reserved10,
+    reserved11,
+    reserved12,
+    reserved13,
+    reserved14,
+    reserved15
+}
+
+
+-- This type is used to report or select a satellite within a given constellation.
+-- The number will correspond to the Space Vehicle ID (SVID) or Pseudorandom Number (PRN).
+SatID ::= SEQUENCE {
+    wordPadding                     Pad8bits,
+    satID                           INTEGER (0..255)
+}
+
+
+-- This type indicates the reported satellite service health.
+SatSignalHealth ::= ENUMERATED {
+    sshSatOk,                       -- satellite OK
+    sshSatOutOfService,             -- satellite out of service
+    sshSatWillBeOutOfService,       -- satellite planned to be out of service
+    sshSatCurrentlyInTest,          -- satellite under test
+    sshHealthUnknown                -- satellite service health unknown
+}
+
+
+-- This type identifies the states of the receiver trackers.
+-- Padded to use 4 bits.
+SatTrackingState ::= ENUMERATED {
+    trackingState0,                 -- Not in acquisition or tracking
+    trackingState1,                 -- Normal acquisition,
+    trackingState2,                 -- Direct acquisition,
+    trackingState3,                 -- Code lock,
+    trackingState4,                 -- Non-coherent carrier lock,
+    trackingState5,                 -- Carrier track data demodulation
+    trackingState6,                 -- Sequential track
+    trackingState7,                 -- Signal reacquisition
+    reserved8,
+    reserved9,
+    reserved10,
+    reserved11,
+    reserved12,
+    reserved13,
+    reserved14,
+    reserved15
+}
+
+
+-- This type reports or selects a multiple SBAS (or other augmentation service) signals (or indicates that the receiver should do so automatically).
+-- Padded to use 24 bits.
+SBASMultiSignalID ::= SEQUENCE {
+    sbasSigAutoChoose               BOOLEAN,
+    sbasSigL1WAAS                   BOOLEAN,
+    sbasSigL5WAAS                   BOOLEAN,
+    sbasSigL1EGNOS                  BOOLEAN,
+    sbasSigSDCM                     BOOLEAN,
+    sbasSigSNAS                     BOOLEAN,
+    sbasSigGAGAN                    BOOLEAN,
+    sbasSigMSAS                     BOOLEAN,
+    reservedBits                    Pad16bits
+}
+
+
+-- This type reports or selects a single SBAS (or other augmentation service) signal (or indicates that the receiver should do so automatically).
+-- Padded to use 4 bits.
+SBASSignalID ::= ENUMERATED {
+    sbasSigNone,
+    sbasSigAutoChoose,
+    sbasSigL1WAAS,
+    sbasSigL5WAAS,
+    sbasSigL1EGNOS,
+    sbasSigSDCM,
+    sbasSigSNAS,
+    sbasSigGAGAN,
+    sbasSigMSAS,
+    reserved9,
+    reserved10,
+    reserved11,
+    reserved12,
+    reserved13,
+    reserved14,
+    reserved15
+}
+
+
+-- This type identifies the sensors in use.
+-- Padded to use 32 bits.
+SensorsInUse ::= SEQUENCE {
+    gnssSingleAntenna               BOOLEAN,
+    gnssMultiAntenna                BOOLEAN,
+    imu                             BOOLEAN,                -- Inertial Measurement Unit
+    magnetometer                    BOOLEAN,
+    baro                            BOOLEAN,
+    vehicleWheelSensorOdometer      BOOLEAN,
+    accelerometer                   BOOLEAN,
+    singleAxisGyro                  BOOLEAN,
+    stableClock                     BOOLEAN,
+    ins                             BOOLEAN,                -- Inertial Navigation System
+    radAlt                          BOOLEAN,
+    trn                             BOOLEAN,                -- Terrain Reference Navigation
+    extNavData                      BOOLEAN,                -- ephemeris, ionospheric corrections, clock etc. are from an external aiding source
+    velocityAiding                  BOOLEAN,
+    reservedBits                    Pad18bits
+}
+
+
+-- This type gives all the information necessary to completely configure a
+-- serial communications port on the receiver.
+SerialPortConfiguration ::= SEQUENCE {
+    serialPortID                    PortID,
+    wordPadding                     Pad6bits,
+    direction                       ENUMERATED {
+        directionBoth,                  -- both directions
+        directionRxOut,                 -- transmit (from receiver's perspective)
+        directionRxIn                   -- receive (from receiver's perspective)
+    },
+    wordPadding1                    Pad5bits,
+-- This type sets the parity mechanism used - usually 0 (no parity bit).
+    parity                          ENUMERATED {
+        parityNone,                     -- no parity
+        parityOdd,                      -- sets odd parity
+        parityEven,                     -- sets even parity
+        parityMark,                     -- sets the parity bit to mark
+        paritySpace                     -- sets the parity bit to space
+    },
+    wordPadding2                    Pad8bits,
+    baudRate                        Unsigned32              -- bits per second, e.g. 4800, 9600 etc
+}
+
+
+-- This type allows a multi-signal identifier to be reported or selected for any constellation.
+SignalID ::= SEQUENCE {
+-- Used to pad the SignalID out to total of 32 bits (two words).
+-- E.g. GPSMultiSignalID (24 bits), ASN.1 choice (4 bits) + padding (4 bits).
+    wordPadding                     Pad4bits,
+-- Choices 1 to 16 sent as 0 to 15 down the wire.
+-- Padded to use 4 bits.
+    multiSignalID                   CHOICE {
+-- reserved0 & 1 used to align indexes with ConstellationID to avoid potential confusion.
+        reserved0                       ReservedMultiSignalID,
+-- reserved0 & 1 used to align indexes with ConstellationID to avoid potential confusion.
+        reserved1                       ReservedMultiSignalID,
+        gps                             GPSMultiSignalID,
+        gal                             GalMultiSignalID,
+        glo                             GLOMultiSignalID,
+        bds                             BDSMultiSignalID,
+        reserved6                       ReservedMultiSignalID,
+        reserved7                       ReservedMultiSignalID,
+        reserved8                       ReservedMultiSignalID,
+        reserved9                       ReservedMultiSignalID,
+        reserved10                      ReservedMultiSignalID,
+        reserved11                      ReservedMultiSignalID,
+        reserved12                      ReservedMultiSignalID,
+        reserved13                      ReservedMultiSignalID,
+        reserved14                      ReservedMultiSignalID,
+        sbas                            SBASMultiSignalID
+    }
+}
+
+
+-- This type defines a spoofing/meaconing status.
+SpoofingMeaconingStatus ::= ENUMERATED {
+    smStatusNoSpoofingOrMeaconingDetected,
+    smStatusPotentialMeaconingDetectedAndMitigated,
+    smStatusPotentialSpoofingDetectedAndMitigated,
+    smStatusSpoofingOrMeaconingAlarm
+}
+
+
+-- This type identifies spoofing and meaconing types.
+-- Padded to use 16 bits.
+SpoofingAndMeaconingTypes ::= SEQUENCE {
+    none                            BOOLEAN,
+    spoofing                        BOOLEAN,
+    meaconing                       BOOLEAN,
+    reservedBits                    Pad12bits,
+    other                           BOOLEAN                 -- indicates spoofing/meaconing of undefined type
+}
+
+
+-- This type identifies the time Figure of Merit accuracy (estimated time error) range.
+TimeFigureOfMerit ::= ENUMERATED {
+    timeFOM0,                       --  undefined
+    timeFOM1,                       --         accuracy <= 1ns
+    timeFOM2,                       -- 1ns   < accuracy <= 10ns
+    timeFOM3,                       -- 10ns  < accuracy <= 100ns
+    timeFOM4,                       -- 100ns < accuracy <= 1us
+    timeFOM5,                       -- 1us   < accuracy <= 10us
+    timeFOM6,                       -- 10us  < accuracy <= 100us
+    timeFOM7,                       -- 100us < accuracy <= 1ms
+    timeFOM8,                       -- 1ms   < accuracy <= 10ms
+    timeFOM9,                       -- 10ms  < accuracy 
+    timeFOM10,                      -- reserved
+    timeFOM11,                      -- reserved
+    timeFOM12,                      -- reserved
+    timeFOM13,                      -- reserved
+    timeFOM14,                      -- reserved
+    timeFOM15                       -- reserved
+}
+
+
+-- This type defines the time reference in use or requested.
+-- Padded to use 4 bits.
+TimeReference ::= ENUMERATED {
+    timeRefUTC,                     -- UTC
+    timeRefGPS,                     -- GPS system time reference
+    timeRefGal,                     -- Galileo system time reference
+    timeRefGLO,                     -- GLONASS system time reference
+    timeRefBDS,                     -- BeiDou system time reference
+    reserved5,
+    reserved6,
+    reserved7,
+    reserved8,
+    reserved9,
+    reserved10,
+    reserved11,
+    reserved12,
+    reserved13,
+    timeRefRx,                      -- receiver local time reference
+    timeRefElapsed                  -- elapsed time, starting point defined by context
+}
+
+
+-- This type contains a time stamp.
+-- Each data message will include a time stamp field that will occupy the first
+-- few octets of the message, this field shall contain the time of validity of
+-- the message data from the receiver (as determined by the receiver).
+-- When the time is unknown, for example immediately following receiver start-up,
+-- the time stamp reference will indicate the elapsed time since start-up until
+-- the time from the GNSS constellation selected as the reference has been
+-- determined, the reference system shall default to GPS.
+TimeStamp ::= SEQUENCE {
+    wordPadding                     Pad12bits,
+    timeReference                   TimeReference,
+    towSeconds                      IEEE754Dp               -- Time Of Week (TOW) in seconds
+}
+
+
+-- This type reports or selects tropospheric correction methods (or indicates that the receiver should do so automatically).
+-- Padded to use 4 bits.
+TropoCorrection ::= ENUMERATED {
+    tropoCorrectionNone,            -- no correction applied
+    tropoCorrectionAuto,            -- receiver to select correction method
+    tropoCorrectionModel,           -- correction via mathematical model utilising a priori values
+    tropoCorrectionIsFrozen,        -- previous correction value applied
+    tropoCorrectionAided,           -- correction via external system e.g. SBAS
+    reserved5,
+    reserved6,
+    reserved7,
+    reserved8,
+    reserved9,
+    reserved10,
+    reserved11,
+    reserved12,
+    reserved13,
+    reserved14,
+    reserved15
+}
+
+
+-- This type is used for upload operations.
+UploadActions ::= ENUMERATED {
+    uploadData,                     -- upload the data block to the receiver
+    uploadVerify,                   -- verify that the completed image upload has been received
+    uploadApply,                    -- apply the upload
+    uploadAbort                     -- abort the upload process (discard any uploaded data)
+}
+
+
+-- This type identifies a velocity consisting of East, North (True) and Up components, each measured in
+-- metres per second (Note: Invalid at the poles).
+VelocityENU ::= SEQUENCE {
+    east                            IEEE754Sp,              -- metres/second
+    north                           IEEE754Sp,              -- metres/second
+    up                              IEEE754Sp               -- metres/second
+}
+
+
+-- This type identifies the velocity Figure of Merit accuracy range.
+VelocityFigureOfMerit ::= ENUMERATED {
+    velFOM0,                        --  undefined
+    velFOM1,                        --            accuracy <= 0.001m/s
+    velFOM2,                        -- 0.001m/s < accuracy <= 0.005m/s
+    velFOM3,                        -- 0.005m/s < accuracy <= 0.01m/s
+    velFOM4,                        -- 0.01m/s  < accuracy <= 0.05m/s
+    velFOM5,                        -- 0.05m/s  < accuracy <= 0.1m/s
+    velFOM6,                        -- 0.1m/s   < accuracy <= 0.5m/s
+    velFOM7,                        -- 0.5m/s   < accuracy <= 1m/s
+    velFOM8,                        -- 1m/s     < accuracy <= 5m/s
+    velFOM9,                        -- 5m/s     < accuracy <= 10m/s
+    velFOM10,                       -- 10m/s    < accuracy <= 50m/s
+    velFOM11,                       -- 50m/s    < accuracy <= 100m/s
+    velFOM12,                       -- 100m/s   < accuracy <= 500m/s
+    velFOM13                        -- 500m/s   < accuracy
+}
+
+
+-- This type identifies an ECEF type velocity consisting of X, Y and Z components, each measured in
+-- metres per second.
+VelocityXYZ ::= SEQUENCE {
+    x                               IEEE754Sp,          -- metres/second
+    y                               IEEE754Sp,          -- metres/second
+    z                               IEEE754Sp           -- metres/second
+}
+
+
+-- This type defines a WaypointID.
+-- ID 0 is special and cannot contain data and is used to signify all or no waypoints depending on context.
+WaypointID ::= INTEGER (0..65535)
+
+
+-- This type defines a Waypoint Index (the index into the array of WaypointIDs in a Route).
+-- The first element in the index is 1, but 0 is included to signify no waypoint index.
+WaypointIndex ::= SEQUENCE {
+    wordPadding                     Pad6bits,
+    waypointIndex                   INTEGER (0..1023)
+}
+
+
+END

@@ -1,0 +1,499 @@
+-- ****************************************************************************
+-- * Protective Marking:    QINETIQ - PROPRIETARY                             *
+-- ****************************************************************************
+-- * Vendor Messages for GNSS Sensor Host ICD                                 *
+-- *                                                                          *
+-- * File name: VendorMessages.asn                                            *
+-- *                                                                          *
+-- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
+-- * Description:                                                             *
+-- *                                                                          *
+-- * This file contains QinetiQ specific Engineering messages.                *
+-- *                                                                          *
+-- * For more details see the GNSS Sensor Host Interface document reference:  *
+-- * QINETIQ/18/03202.                                                        *
+-- *                                                                          *
+-- ****************************************************************************
+VendorMessages DEFINITIONS
+AUTOMATIC TAGS ::=
+
+BEGIN
+
+EXPORTS ALL ;
+
+IMPORTS
+
+    Pad1bits, Pad2bits, Pad3bits, Pad4bits, Pad5bits, Pad6bits, Pad7bits, Pad8bits,
+    Pad9bits, Pad10bits, Pad11bits, Pad12bits, Pad13bits, Pad14bits, Pad15bits,
+    Unsigned8, Unsigned16, Signed16, Signed32, IEEE754Sp
+    FROM FundamentalDataTypes
+
+    DateTime, TimeStamp, LogicalTrackerID, IODirection, MultiSignalID, MessageOctet,
+    LineState
+    FROM CommonFieldDefinitions
+;
+
+
+-- This type defines the content of the Vendor Status Info data block
+-- as sent in the StatusRxBITStatus message
+VendorStatusInfo ::= SEQUENCE {
+    wordPadding                     Pad8bits,
+    codeBlock                       SEQUENCE (SIZE(0..255)) OF VendorCode
+}
+
+
+VendorCode ::= SEQUENCE {
+    -- The code about which data is provided
+    -- The use of unsigned16 allows for 65,536 different codes
+    code                            Unsigned16,
+    -- This is the data that is associated with the code.
+    -- The code value will indicate how the data is to be interpreted.
+    -- This follows the X.509 certificate pattern for attributes.
+    wordPadding                     Pad7bits,
+    data                            SEQUENCE (SIZE(0..256)) OF MessageOctet
+}
+
+
+-- ****************************************************************************
+-- * Set Vendor Receiver Mode                                                 *
+-- *                                                                          *
+-- * Message name:    CmndSetVendorRxMode                                     *
+-- * Message ID:      6499                                                    *
+-- * Frequency:       As required                                             *
+-- * Input/Output:    Input                                                   *
+-- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
+-- * Short Description:                                                       *
+-- *                                                                          *
+-- * This command allows the host to select a specific vendor receiver mode   *
+-- * and an associated time delay.                                            *
+-- *                                                                          *
+-- * Notes:                                                                   *
+-- *                                                                          *
+-- * This is a command to set the receiver into a specialised vendor mode     *
+-- * that is not supported in the standardised Host ICD (e.g. a test mode or  *
+-- * a specialised configuration). The vendor shall identify the specific     *
+-- * modes supported.                                                         *
+-- *                                                                          *
+-- ****************************************************************************
+--
+CmndSetVendorRxMode ::= SEQUENCE {
+    vendorRxMode                    INTEGER(0..65535),          -- Vendor specific mode IDs
+    timeDelay                       IEEE754Sp                   -- Time delay, in seconds, before transitioning to the new mode.
+}
+
+
+-- ****************************************************************************
+-- * Control specified Tracker(s)                                             *
+-- *                                                                          *
+-- * Message name:    CmndControlTracker                                      *
+-- * Message ID:      6498                                                    *
+-- * Frequency:       As required                                             *
+-- * Input/Output:    Input                                                   *
+-- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
+-- * Short Description:                                                       *
+-- *                                                                          *
+-- * This command requests control of the specified trackers, identified by   *
+-- * their logical tracker IDs. The IDs are specified in the SignalsInfo      *
+-- * block of the SatsInView and SatsInUse messages.                          *
+-- *                                                                          *
+-- * Notes:                                                                   *
+-- *                                                                          *
+-- * If trackers are being controlled externally to the Sensor then it may    *
+-- * be nonsensical to ask the Sensor for certain types of data, such as PVT  *
+-- * etc.                                                                     *
+-- *                                                                          *
+-- ****************************************************************************
+--
+CmndControlTracker ::= SEQUENCE {
+    numberOfMessages                Unsigned8,                  -- Number of messages to be sent this epoch (N)
+    messageNumber                   Unsigned8,                  -- Number of message being sent (0 to N-1)
+    handoverTime                    TimeStamp,                  -- Time at which handover should occur.
+    wordPadding                     Pad7bits,
+    trackerIDs                      SEQUENCE (SIZE(0..256)) OF  -- Count of zero controls ALL trackers
+        LogicalTrackerID                                        -- Logical Tracker IDs.
+}
+
+-- ****************************************************************************
+-- * Release specified Tracker(s)                                             *
+-- *                                                                          *
+-- * Message name:    CmndReleaseTracker                                      *
+-- * Message ID:      6497                                                    *
+-- * Frequency:       As required                                             *
+-- * Input/Output:    Input                                                   *
+-- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
+-- * Short Description:                                                       *
+-- *                                                                          *
+-- * This command relinquishes control of the specified trackers, identified  *
+-- * by their logical tracker IDs. The IDs are specified in the SignalsInfo   *
+-- * block of the SatsInView and SatsInUse messages.                          *
+-- *                                                                          *
+-- * Notes:                                                                   *
+-- *                                                                          *
+-- ****************************************************************************
+--
+CmndReleaseTracker ::= SEQUENCE {
+    numberOfMessages                Unsigned8,                  -- Number of messages to be sent this epoch (N)
+    messageNumber                   Unsigned8,                  -- Number of message being sent (0 to N-1)
+    handoverTime                    TimeStamp,                  -- Time at which handover should occur.
+    wordPadding                     Pad7bits,
+    trackerIDs                      SEQUENCE (SIZE(0..256)) OF  -- Count of zero releases ALL trackers
+        LogicalTrackerID                                        -- Logical Tracker IDs.
+}
+
+
+-- ****************************************************************************
+-- * Request Spectrum                                                         *
+-- *                                                                          *
+-- * Message name:    CmndReqSpectrum                                         *
+-- * Message ID:      6496                                                    *
+-- * Frequency:       As required                                             *
+-- * Input/Output:    Input                                                   *
+-- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
+-- * Short Description:                                                       *
+-- *                                                                          *
+-- * This message requests the spectrum data for given channel number.        *
+-- *                                                                          *
+-- * Notes:                                                                   *
+-- *                                                                          *
+-- ****************************************************************************
+--
+CmndReqSpectrum ::= SEQUENCE {
+    wordPadding                     Pad14bits,
+    channelNumber                   INTEGER (0..3)
+}
+
+
+-- ****************************************************************************
+-- * Spectrum Data message                                                    *
+-- *                                                                          *
+-- * Message name:    DataSpectrum                                            *
+-- * Message ID:      6495                                                    *
+-- * Frequency:       As required                                             *
+-- * Input/Output:    Output                                                  *
+-- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
+-- * Short Description:                                                       *
+-- *                                                                          *
+-- * The spectrum data requested is returned in this message.                 *
+-- *                                                                          *
+-- * Notes:                                                                   *
+-- *                                                                          *
+-- * The spectrum is centred on the stated frequency (which is the central    *
+-- * bin). It will be sent starting with the most negative frequency offset   *
+-- * through to the most positive.                                            *
+-- *                                                                          *
+-- ****************************************************************************
+--
+DataSpectrum ::= SEQUENCE {
+    validityTime                    TimeStamp,
+    wordPadding                     Pad14bits,
+    channelNumber                   INTEGER (0..3),
+    rfCentreFrequency               IEEE754Sp,                  -- Hz
+    binSpacing                      IEEE754Sp,                  -- Hz
+    spectrum                        SEQUENCE (SIZE(0..65535)) OF SEQUENCE {
+        freqBinI                        Unsigned16,
+        freqBinQ                        Unsigned16
+    }
+}
+
+
+-- ****************************************************************************
+-- * Request Capture Buffer                                                   *
+-- *                                                                          *
+-- * Message name:    CmndReqCaptureBuffer                                    *
+-- * Message ID:      6494                                                    *
+-- * Frequency:       As required                                             *
+-- * Input/Output:    Input                                                   *
+-- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
+-- * Short Description:                                                       *
+-- *                                                                          *
+-- * This message requests the capture buffer data for given channel number.  *
+-- *                                                                          *
+-- * Notes:                                                                   *
+-- *                                                                          *
+-- ****************************************************************************
+--
+CmndReqCaptureBuffer ::= SEQUENCE {
+    wordPadding                     Pad14bits,
+    channelNumber                   INTEGER (0..3)
+}
+
+
+-- ****************************************************************************
+-- * Capture Buffer Data message                                              *
+-- *                                                                          *
+-- * Message name:    DataCaptureBuffer                                       *
+-- * Message ID:      6493                                                    *
+-- * Frequency:       As required                                             *
+-- * Input/Output:    Output                                                  *
+-- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
+-- * Short Description:                                                       *
+-- *                                                                          *
+-- * The capture buffer data requested is returned in this message.           *
+-- *                                                                          *
+-- * Notes:                                                                   *
+-- *                                                                          *
+-- ****************************************************************************
+--
+DataCaptureBuffer ::= SEQUENCE {
+    validityTime                    TimeStamp,
+    wordPadding                     Pad14bits,
+    channelNumber                   INTEGER (0..3),
+    sampleRate                      IEEE754Sp,                  -- Hz
+    bandwidth                       IEEE754Sp,                  -- Hz
+    rFGain                          IEEE754Sp,                  -- dB
+    baseBandGain                    IEEE754Sp,                  -- dB
+    samples                         SEQUENCE (SIZE(0..65535)) OF SEQUENCE {
+        sampleI                         Signed16,
+        sampleQ                         Signed16
+    }
+}
+
+
+-- ****************************************************************************
+-- * Select IMU                                                               *
+-- *                                                                          *
+-- * Message name:    CmndSelectIMU                                           *
+-- * Message ID:      6492                                                    *
+-- * Frequency:       As required                                             *
+-- * Input/Output:    Input                                                   *
+-- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
+-- * Short Description:                                                       *
+-- *                                                                          *
+-- * This message specifies the appropriate IMU.                              *
+-- *                                                                          *
+-- * Notes:                                                                   *
+-- *                                                                          *
+-- * Integration of inertial and other sensors can be a complex task and      *
+-- * although this ICD provides for information transfer in a standardised    *
+-- * format it does not obviate the need for careful integration of GNSS      *
+-- * receiver and sensors. A particular example is in understanding the       *
+-- * performance of different sensors and the impact on position, velocity    *
+-- * and timing errors, error growth and how these might contribute to        *
+-- * overall accuracy reporting.                                              *
+-- *                                                                          *
+-- ****************************************************************************
+--
+CmndSelectIMU ::= SEQUENCE {
+-- This type specifies the IMUs available.
+    imuType                         INTEGER {
+        imuTypeNone(0),
+        imuTypeSTANAG4572(1),
+        imuTypeSIIMU02(2)
+    } (0..65535)
+}
+
+
+-- ****************************************************************************
+-- * Configure GPIO Port                                                      *
+-- *                                                                          *
+-- * Message name:    CmndConfigGPIOPort                                      *
+-- * Message ID:      6491                                                    *
+-- * Frequency:       As required                                             *
+-- * Input/Output:    Input/Output                                            *
+-- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
+-- * Short Description:                                                       *
+-- *                                                                          *
+-- * Sets the type (input, output or unused) of the specified GPIO ports      *
+-- *                                                                          *
+-- * Notes:                                                                   *
+-- *                                                                          *
+-- ****************************************************************************
+--
+CmndConfigGPIOPort ::= SEQUENCE {
+    ports                           SEQUENCE (SIZE(0..255)) OF SEQUENCE {
+        port                            GPIOPortNumber,
+        wordPadding                     Pad6bits,
+        portDirection                   IODirection
+    }
+}
+
+
+-- ****************************************************************************
+-- * Write to the specified GPIO port                                         *
+-- *                                                                          *
+-- * Message name:    CmndWriteGPIOPort                                       *
+-- * Message ID:      6490                                                    *
+-- * Frequency:       As required                                             *
+-- * Input/Output:    Input                                                   *
+-- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
+-- * Short Description:                                                       *
+-- *                                                                          *
+-- * Sets the specified GPIO port number to the value specified               *
+-- *                                                                          *
+-- * Notes:                                                                   *
+-- *                                                                          *
+-- ****************************************************************************
+--
+CmndWriteGPIOPort ::= SEQUENCE {
+    port                            GPIOPortNumber,
+    wordPadding                     Pad6bits,
+    portValue                       LineState
+}
+
+
+-- ****************************************************************************
+-- * Requests a read of the specified GPIO port                               *
+-- *                                                                          *
+-- * Message name:    CmndReadGPIOPort                                        *
+-- * Message ID:      6489                                                    *
+-- * Frequency:       As required                                             *
+-- * Input/Output:    Input                                                   *
+-- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
+-- * Short Description:                                                       *
+-- *                                                                          *
+-- * Requests the specified GPIO port is read                                 *
+-- *                                                                          *
+-- * Notes:                                                                   *
+-- *                                                                          *
+-- ****************************************************************************
+--
+CmndReadGPIOPort ::= GPIOPortNumber
+
+
+-- ****************************************************************************
+-- * Returns the value of the specified GPIO port                             *
+-- *                                                                          *
+-- * Message name:    DataReadGPIOPort                                        *
+-- * Message ID:      6488                                                    *
+-- * Frequency:       As required                                             *
+-- * Input/Output:    Output                                                  *
+-- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
+-- * Short Description:                                                       *
+-- *                                                                          *
+-- * Returns the value of the specified GPIO port                             *
+-- *                                                                          *
+-- * Notes:                                                                   *
+-- *                                                                          *
+-- ****************************************************************************
+--
+DataReadGPIOPort ::= SEQUENCE {
+    port                            GPIOPortNumber,
+    wordPadding                     Pad6bits,
+    portValue                       LineState
+}
+
+
+-- This type is used to identify a GPIO port
+GPIOPortNumber ::= Unsigned8
+
+
+-- ****************************************************************************
+-- * Configure the output rates for the Epoch pulses                          *
+-- *                                                                          *
+-- * Message name:    CmndConfigEpochPorts                                    *
+-- * Message ID:      6487                                                    *
+-- * Frequency:       As required                                             *
+-- * Input/Output:    Input/Output                                            *
+-- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
+-- * Short Description:                                                       *
+-- *                                                                          *
+-- * Specifies the output rates for the Epoch ports in Hz                     *
+-- *                                                                          *
+-- * Notes:                                                                   *
+-- *                                                                          *
+-- ****************************************************************************
+--
+CmndConfigEpochPorts ::= SEQUENCE {
+    ratePort1                       IEEE754Sp,                  -- Hz Use 0 Hz to turn off output
+    ratePort2                       IEEE754Sp                   -- Hz Use 0 Hz to turn off output
+}
+
+
+-- ****************************************************************************
+-- * Reads the receiver's fault log entries                                   *
+-- *                                                                          *
+-- * Message name:    DataReadFaultLog                                        *
+-- * Message ID:      6486                                                    *
+-- * Frequency:       As required                                             *
+-- * Input/Output:    Output                                                  *
+-- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
+-- * Short Description:                                                       *
+-- *                                                                          *
+-- * Contains the fault log entries from the receiver (if any).               *
+-- *                                                                          *
+-- * Notes:                                                                   *
+-- *                                                                          *
+-- ****************************************************************************
+--
+DataReadFaultLog ::= SEQUENCE {
+    validityTime                    TimeStamp,
+    wordPadding                     Pad9bits,
+    faultLogEntries                 SEQUENCE (SIZE(0..127)) OF SEQUENCE {
+        faultLogDateTime                DateTime,
+        faultLogEntry                   VendorStatusInfo
+    }
+}
+
+
+-- ****************************************************************************
+-- * Clears the receiver's fault log entries                                  *
+-- *                                                                          *
+-- * Message name:    CmndClearFaultLog                                       *
+-- * Message ID:      6485                                                    *
+-- * Frequency:       As required                                             *
+-- * Input/Output:    Input                                                   *
+-- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
+-- * Short Description:                                                       *
+-- *                                                                          *
+-- * This command instructs the receiver to erase the fault log entries.      *
+-- *                                                                          *
+-- * Notes:                                                                   *
+-- *                                                                          *
+-- ****************************************************************************
+--
+CmndClearFaultLog ::= NULL
+
+
+-- ****************************************************************************
+-- * Satellite health override.                                               *
+-- *                                                                          *
+-- * Message name:    CmndSatHealthOverride                                   *
+-- * Message ID:      6484                                                    *
+-- * Frequency:       As required                                             *
+-- * Input/Output:    Input/Output                                            *
+-- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
+-- * Short Description:                                                       *
+-- *                                                                          *
+-- * Override the suppression of unhealthy satellites.                        *
+-- *                                                                          *
+-- * Notes:                                                                   *
+-- *                                                                          *
+-- * The message overwrites any previously set overrides. To remove           *
+-- * overrides send 0.                                                        *
+-- *                                                                          *
+-- * Messages that normally don't include data for unhealthy satellites will  *
+-- * include data for the unhealthy satellite signals specified.              *
+-- *                                                                          *
+-- ****************************************************************************
+--
+CmndSatHealthOverride ::= MultiSignalID
+
+
+-- ****************************************************************************
+-- * Receiver software purge.                                                 *
+-- *                                                                          *
+-- * Message name:    CmndPurge                                               *
+-- * Message ID:      6483                                                    *
+-- * Frequency:       Once (per request)                                      *
+-- * Input/Output:    Input                                                   *
+-- *~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*
+-- * Short Description:                                                       *
+-- *                                                                          *
+-- * Causes the software image and all mission data to be cleared such that   *
+-- * it is no longer available and the receiver can no longer be used.        *
+-- *                                                                          *
+-- * Notes:                                                                   *
+-- *                                                                          *
+-- * In order for this command to be enacted it must be sent with the         *
+-- * predefined purge code (which can, according to vendor implementation, be *
+-- * of zero length). This is to prevent an accidental purge.                 *
+-- *                                                                          *
+-- ****************************************************************************
+--
+CmndPurge ::= SEQUENCE {
+    wordPadding                     Pad8bits,
+    purgeCode                       SEQUENCE (SIZE(0..255)) OF MessageOctet    -- Character string key required for the command to work.
+}
+
+
+END

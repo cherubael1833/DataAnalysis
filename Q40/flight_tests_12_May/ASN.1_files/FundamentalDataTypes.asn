@@ -1,0 +1,110 @@
+FundamentalDataTypes DEFINITIONS
+AUTOMATIC TAGS ::=
+
+BEGIN
+
+EXPORTS ALL ;
+
+-- ****************************************************************************
+-- * Low precision real number types. This OCTET STRING is intended to hold   *
+-- * IEEE754 single precision floating point numbers.                         *
+-- * Standard encoding rules (e.g. DER, BER, UPER etc.) do not allow for the  *
+-- * IEEE754 formats to be used, and so this OCTET STRING is intended to hold *
+-- * the IEEE754 encodings. Implementers of this specification are required   *
+-- * to use their own functions to encode/decode the IEEE754 values that will *
+-- * populate this OCTET STRING.                                              *
+-- ****************************************************************************
+IEEE754Sp ::=               OCTET STRING (SIZE(4))
+
+-- ****************************************************************************
+-- * High precision real number types. This OCTET STRING is intended to hold  *
+-- * IEEE754 double precision floating point numbers.                         *
+-- * Standard encoding rules (e.g. DER, BER, UPER etc.) do not allow for the  *
+-- * IEEE754 formats to be used, and so this OCTET STRING is intended to hold *
+-- * the IEEE754 encodings. Implementers of this specification are required   *
+-- * to use their own functions to encode/decode the IEEE754 values that will *
+-- * populate this OCTET STRING.                                              *
+-- ****************************************************************************
+IEEE754Dp ::=               OCTET STRING (SIZE(8))
+
+-- Constants defined to aid padding, which is used to align byte and multiple
+-- byte parameters on word boundaries for ease of decoding.
+Pad1bits ::=                INTEGER (0..1)
+Pad2bits ::=                INTEGER (0..3)
+Pad3bits ::=                INTEGER (0..7)
+Pad4bits ::=                INTEGER (0..15)
+Pad5bits ::=                INTEGER (0..31)
+Pad6bits ::=                INTEGER (0..63)
+Pad7bits ::=                INTEGER (0..127)
+Pad8bits ::=                INTEGER (0..255)
+Pad9bits ::=                INTEGER (0..511)
+Pad10bits ::=               INTEGER (0..1023)
+Pad11bits ::=               INTEGER (0..2047)
+Pad12bits ::=               INTEGER (0..4095)
+Pad13bits ::=               INTEGER (0..8191)
+Pad14bits ::=               INTEGER (0..16383)
+Pad15bits ::=               INTEGER (0..32767)
+Pad16bits ::=               INTEGER (0..65535)
+Pad17bits ::=               INTEGER (0..131071)
+Pad18bits ::=               INTEGER (0..262143)
+Pad19bits ::=               INTEGER (0..524287)
+Pad24bits ::=               INTEGER (0..16777215)
+Pad25bits ::=               INTEGER (0..33554431)
+
+-- Types used to store values within a specified range.
+Unsigned1 ::=               INTEGER (0..1)
+Unsigned2 ::=               INTEGER (0..3)
+Unsigned3 ::=               INTEGER (0..7)
+Unsigned4 ::=               INTEGER (0..15)
+Unsigned5 ::=               INTEGER (0..31)
+Unsigned6 ::=               INTEGER (0..63)
+Unsigned7 ::=               INTEGER (0..127)
+Unsigned8 ::=               INTEGER (0..255)
+Unsigned9 ::=               INTEGER (0..511)
+Unsigned10 ::=              INTEGER (0..1023)
+Unsigned11 ::=              INTEGER (0..2047)
+Unsigned12 ::=              INTEGER (0..4095)
+Unsigned13 ::=              INTEGER (0..8191)
+Unsigned14 ::=              INTEGER (0..16383)
+Unsigned15 ::=              INTEGER (0..32767)
+Unsigned16 ::=              INTEGER (0..65535)
+Unsigned17 ::=              INTEGER (0..131071)
+Unsigned20 ::=              INTEGER (0..1048575)
+Unsigned21 ::=              INTEGER (0..2097151)
+Unsigned24 ::=              INTEGER (0..16777215)
+Unsigned32 ::=              INTEGER (0..4294967295)
+Unsigned33 ::=              INTEGER (0..8589934591)
+Signed3 ::=                 INTEGER (-4..3)
+Signed4 ::=                 INTEGER (-8..7)
+Signed5 ::=                 INTEGER (-16..15)
+Signed6 ::=                 INTEGER (-32..31)
+Signed7 ::=                 INTEGER (-64..63)
+Signed8 ::=                 INTEGER (-128..127)
+Signed9 ::=                 INTEGER (-256..255)
+Signed10 ::=                INTEGER (-512..511)
+Signed11 ::=                INTEGER (-1024..1023)
+Signed12 ::=                INTEGER (-2048..2047)
+Signed13 ::=                INTEGER (-4096..4095)
+Signed14 ::=                INTEGER (-8192..8191)
+Signed15 ::=                INTEGER (-16384..16383)
+Signed16 ::=                INTEGER (-32768..32767)
+Signed17 ::=                INTEGER (-65536..65535)
+Signed18 ::=                INTEGER (-131072..131071)
+Signed19 ::=                INTEGER (-262144..262143)
+Signed20 ::=                INTEGER (-524288..524287)
+Signed21 ::=                INTEGER (-1048576..1048575)
+Signed22 ::=                INTEGER (-2097152..2097151)
+Signed23 ::=                INTEGER (-4194304..4194303)
+Signed24 ::=                INTEGER (-8388608..8388607)
+Signed25 ::=                INTEGER (-16777216..16777215)
+Signed26 ::=                INTEGER (-33554432..33554431)
+Signed27 ::=                INTEGER (-67108864..67108863)
+Signed28 ::=                INTEGER (-134217728..134217727)
+Signed30 ::=                INTEGER (-536870912..536870911)
+Signed31 ::=                INTEGER (-1073741824..1073741823)
+Signed32 ::=                INTEGER (-2147483648..2147483647)
+Signed33 ::=                INTEGER (-4294967296..4294967295)
+Signed35 ::=                INTEGER (-17179869184..17179869183)
+Signed40 ::=                INTEGER (-549755813888..549755813887)
+
+END
