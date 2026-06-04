@@ -10,6 +10,10 @@ env/
 *.xlsx
 *.csv
 *.out
+*.bin
+*.zip
+*.tar.gz
+*.rar
 # OS
 .DS_Store
 *.out

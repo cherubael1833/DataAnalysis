@@ -1,0 +1,9 @@
+Quick update on the GPS testing from today. Weather was pretty bad so we only managed to get two of the three planned flights in. I also bumped the 10m floor up to 30m just to give myself a safety buffer. 10m felt too close with bad cg and strong wind. 
+
+Flight 1 (100m)
+Flight: Started at 30m for a few minutes to get a baseline, then climbed up to 100m.
+Status: Fully logged flight.
+
+Flight 2 (30m)
+Flight: Stuck to a steady 30m.
+Status: Ended up chopping the usb-c cable to the pi at some point in the flight, the logs definitely cut short but there is still a bit of data.
